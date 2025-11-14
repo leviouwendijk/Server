@@ -18,6 +18,9 @@ final class ServerConnectionHandler: @unchecked Sendable {
         self.router = router
         self.config = config
         self.statusRegistry = statusRegistry
+
+        connection.start(queue: DispatchQueue(label: "server.connection.\(UUID().uuidString)"))
+
         startReceiveLoop()
     }
     
@@ -56,6 +59,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
     // }
 
     private func processBuffer() {
+        log("processBuffer called, buffer size: \(buffer.count)", level: .debug)
         // Look for HTTP request terminator: \r\n\r\n
         let httpTerminator = Data("\r\n\r\n".utf8)
         
@@ -75,6 +79,9 @@ final class ServerConnectionHandler: @unchecked Sendable {
     }
     
     private func handleText(_ text: String) {
+        log("handleText called with \(text.count) bytes", level: .debug)
+        log("Request text: \(text.prefix(100))", level: .debug)
+
         if text.hasPrefix("GET ") || text.hasPrefix("POST ") {
             do {
                 let request = try HTTPRequestParser.parse(text)
