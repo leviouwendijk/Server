@@ -58,54 +58,54 @@ public let testRoutes = routes {
             }
         }
         
-        post("eval") { request, _ async in
-            do {
-                let output = try await evaluatePklBody(request.body)
-                return HTTPResponse.pkl(output)
-            } catch {
-                return .internalServerError(body: "PKL eval error: \(error.localizedDescription)")
-            }
-        }
+        // post("eval") { request, _ async in
+        //     do {
+        //         let output = try await evaluatePklBody(request.body)
+        //         return HTTPResponse.pkl(output)
+        //     } catch {
+        //         return .internalServerError(body: "PKL eval error: \(error.localizedDescription)")
+        //     }
+        // }
         
-        post("json") { request, _ async in
-            do {
-                let value = try await evaluatePklJSONBody(request.body)
-                return try HTTPResponse.pkl(value)
-            } catch {
-                return .internalServerError(body: "PKL json error: \(error.localizedDescription)")
-            }
-        }
+        // post("json") { request, _ async in
+        //     do {
+        //         let value = try await evaluatePklJSONBody(request.body)
+        //         return try HTTPResponse.pkl(value)
+        //     } catch {
+        //         return .internalServerError(body: "PKL json error: \(error.localizedDescription)")
+        //     }
+        // }
         
-        post("pkl") { request, _ async in
-            do {
-                let value = try await evaluatePklJSONBody(request.body)
-                return try HTTPResponse.pkl(value)
-            } catch {
-                return .internalServerError(body: "PKL rendering error: \(error.localizedDescription)")
-            }
-        }
+        // post("pkl") { request, _ async in
+        //     do {
+        //         let value = try await evaluatePklJSONBody(request.body)
+        //         return try HTTPResponse.pkl(value)
+        //     } catch {
+        //         return .internalServerError(body: "PKL rendering error: \(error.localizedDescription)")
+        //     }
+        // }
         
-        post("flatten") { request, _ async in
-            do {
-                let value = try await evaluatePklJSONBody(request.body)
-                let flat = flattenJSONValue(value)
-                let pklDict: [String: JSONValue] = flat.mapValues { .string($0) }
-                return try HTTPResponse.pkl(pklDict)
-            } catch {
-                return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
-            }
-        }
+        // post("flatten") { request, _ async in
+        //     do {
+        //         let value = try await evaluatePklJSONBody(request.body)
+        //         let flat = flattenJSONValue(value)
+        //         let pklDict: [String: JSONValue] = flat.mapValues { .string($0) }
+        //         return try HTTPResponse.pkl(pklDict)
+        //     } catch {
+        //         return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
+        //     }
+        // }
         
-        post("types") { request, _ async in
-            do {
-                let value = try await evaluatePklJSONBody(request.body)
-                let types = flattenJSONTypes(value)
-                let pklDict: [String: JSONValue] = types.mapValues { .string($0) }
-                return try HTTPResponse.pkl(pklDict)
-            } catch {
-                return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
-            }
-        }
+        // post("types") { request, _ async in
+        //     do {
+        //         let value = try await evaluatePklJSONBody(request.body)
+        //         let types = flattenJSONTypes(value)
+        //         let pklDict: [String: JSONValue] = types.mapValues { .string($0) }
+        //         return try HTTPResponse.pkl(pklDict)
+        //     } catch {
+        //         return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
+        //     }
+        // }
     }
     
     group("admin", "users") {

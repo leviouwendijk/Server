@@ -1,15 +1,6 @@
 {
-  "originHash" : "054ddc1cd11bf572208cc69a9195eed49047135e84cb311321a207ae2b1990be",
+  "originHash" : "1231d5f343eacdd69a96bdcae01b3fc3bbdb0f7c0daea357d916830f633644b4",
   "pins" : [
-    {
-      "identity" : "pkl-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/pkl-swift",
-      "state" : {
-        "revision" : "843d1664d31a068ad1cc5816be4d3e654bf4b99c",
-        "version" : "0.7.0"
-      }
-    },
     {
       "identity" : "plate",
       "kind" : "remoteSourceControl",
@@ -20,39 +11,12 @@
       }
     },
     {
-      "identity" : "semanticversion",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SwiftPackageIndex/SemanticVersion",
-      "state" : {
-        "revision" : "3b18d75a3cece558fb98e72d7dd5c83394d86d5b",
-        "version" : "0.5.1"
-      }
-    },
-    {
       "identity" : "structures",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/leviouwendijk/Structures.git",
       "state" : {
         "branch" : "master",
         "revision" : "52696d556415cb97b1750ef2f95e235698bf9d37"
-      }
-    },
-    {
-      "identity" : "swift-argument-parser",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-argument-parser.git",
-      "state" : {
-        "revision" : "cdd0ef3755280949551dc26dee5de9ddeda89f54",
-        "version" : "1.6.2"
-      }
-    },
-    {
-      "identity" : "swift-system",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-system",
-      "state" : {
-        "revision" : "395a77f0aa927f0ff73941d7ac35f2b46d47c9db",
-        "version" : "1.6.3"
       }
     }
   ],
