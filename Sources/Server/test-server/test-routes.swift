@@ -118,7 +118,7 @@ public let testRoutes = routes {
                 ])
             ]
             do {
-                return try HTTPResponse.pkl(userList)
+                return try HTTPResponse.json(userList)
             } catch {
                 return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
             }
@@ -132,7 +132,7 @@ public let testRoutes = routes {
                 "created_at": .string("2025-11-14T12:00:00Z")
             ]
             do {
-                return try HTTPResponse.pkl(newUser, status: .created)
+                return try HTTPResponse.json(newUser, status: .created)
             } catch {
                 return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
             }
@@ -152,7 +152,7 @@ public let testRoutes = routes {
                 ])
             ]
             do {
-                return try HTTPResponse.pkl(user)
+                return try HTTPResponse.json(user)
             } catch {
                 return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
             }
@@ -166,7 +166,7 @@ public let testRoutes = routes {
                 "updated_at": .string("2025-11-14T12:30:00Z")
             ]
             do {
-                return try HTTPResponse.pkl(updatedUser)
+                return try HTTPResponse.json(updatedUser)
             } catch {
                 return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
             }
@@ -197,7 +197,7 @@ public let testRoutes = routes {
                 ])
             ]
             do {
-                return try HTTPResponse.pkl(config)
+                return try HTTPResponse.json(config)
             } catch {
                 return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
             }
@@ -222,7 +222,7 @@ public let testRoutes = routes {
                 ])
             ]
             do {
-                return try HTTPResponse.pkl(features)
+                return try HTTPResponse.json(features)
             } catch {
                 return .internalServerError(body: "Failed to render response: \(error.localizedDescription)")
             }
