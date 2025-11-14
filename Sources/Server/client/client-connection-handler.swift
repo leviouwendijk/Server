@@ -87,21 +87,9 @@ final class RequestConnectionHandler: @unchecked Sendable {
         log("Found HTTP terminator, headerEnd = \(headerEnd)")
 
         let headerData = buffer.subdata(in: 0..<headerEnd)
-        let headerText = String(data: headerData, encoding: .utf8) ?? ""
 
-        // Parse headers to get Content-Length
-        let headLines = headerText.split(separator: "\n")
-        var contentLength = 0
-        for line in headLines {
-            if line.lowercased().hasPrefix("content-length:") {
-                let parts = line.split(separator: ":")
-                if parts.count > 1, let length = Int(parts[1].trimmingCharacters(in: .whitespaces))
-                {
-                    contentLength = length
-                    log("Parsed Content-Length: \(contentLength)")
-                }
-            }
-        }
+        let contentLength = HTTPResponseParser.extractContentLength(from: headerData) ?? 0
+        log("Parsed Content-Length: \(contentLength)")
 
         let totalNeeded = headerEnd + contentLength
         log("Total needed: \(totalNeeded), buffer has: \(buffer.count)")
