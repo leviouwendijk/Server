@@ -11,12 +11,12 @@ public protocol Runtime {
 }
 
 extension Runtime {
-    var config: ServerConfig { ServerConfig.externallyManagedProcess() }
-    var routes: [Route] { routable() }
-    var router: Router { Router(routes: routes) }
-    var engine: ServerEngine { ServerEngine(config: config, router: router) }
+    public var config: ServerConfig { ServerConfig.externallyManagedProcess() }
+    public var routes: [Route] { routable() }
+    public var router: Router { Router(routes: routes) }
+    public var engine: ServerEngine { ServerEngine(config: config, router: router) }
 
-    func main() async {
+    public func main() async {
         do {
             try await engine.start()
             try await Task.sleep(nanoseconds: UInt64.max)
