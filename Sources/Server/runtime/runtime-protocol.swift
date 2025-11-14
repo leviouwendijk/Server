@@ -7,7 +7,8 @@ public protocol Runtime {
     var engine: ServerEngine { get }
 
     func routable() -> [Route]
-    func run() async
+    // func run() async
+    static func main() async
 }
 
 extension Runtime {
@@ -16,12 +17,12 @@ extension Runtime {
     public var router: Router { Router(routes: routes) }
     public var engine: ServerEngine { ServerEngine(config: config, router: router) }
 
-    public func run() async {
-        do {
-            try await engine.start()
-            try await Task.sleep(nanoseconds: UInt64.max)
-        } catch {
-            print("Failed to start server: \(error.localizedDescription)")
-        }
-    }
+    // public func run() async {
+    //     do {
+    //         try await engine.start()
+    //         try await Task.sleep(nanoseconds: UInt64.max)
+    //     } catch {
+    //         print("Failed to start server: \(error.localizedDescription)")
+    //     }
+    // }
 }
