@@ -16,7 +16,6 @@ final class RequestConnectionHandler: @unchecked Sendable {
         self.connection = connection
         self.onSuccess = onSuccess
         self.onError = onError
-        startReceiveLoop()
     }
     
     private func markDone() {
@@ -84,9 +83,13 @@ final class RequestConnectionHandler: @unchecked Sendable {
     
     func send(_ string: String) {
         let payload = Data(string.utf8)
-        connection.send(content: payload, completion: .contentProcessed { error in
+        connection.send(content: payload, completion: .contentProcessed { [weak self] error in
             if let error = error {
                 print("Send error: \(error)")
+                self?.onError(.connectionFailed(error.localizedDescription))
+            } else {
+                // Only start receiving after send completes successfully
+                self?.startReceiveLoop()
             }
         })
     }
