@@ -8,9 +8,10 @@ public struct TestClient {
     public static func withDefaults(
         host: String = "127.0.0.1",
         port: UInt16 = 9090,
-        timeout: TimeInterval = 5
+        timeout: TimeInterval = 5,
+        debug: Bool = true
     ) -> TestClient {
-        let config = HTTPClientConfig(host: host, port: port, timeout: timeout)
+        let config = HTTPClientConfig(host: host, port: port, timeout: timeout, debug: debug)
         let client = HTTPClient(config: config)
         return TestClient(config: config, client: client)
     }
