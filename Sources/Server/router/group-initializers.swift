@@ -22,3 +22,27 @@ public func group(
         )
     }
 }
+
+public func group(
+    _ prefix: String...,
+    @GroupBuilder builder: () -> [Route]
+) -> GroupWithMiddleware {
+    let prefixPath = prefix.joined(separator: "/")
+    
+    let routes = builder().map { route in
+        let newPath: String
+        if route.path == "/" {
+            newPath = "/" + prefixPath
+        } else {
+            newPath = "/" + prefixPath + route.path
+        }
+        
+        return Route(
+            method: route.method,
+            path: newPath,
+            handler: route.handler
+        )
+    }
+    
+    return GroupWithMiddleware(routes: routes)
+}

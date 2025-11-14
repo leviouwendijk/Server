@@ -1,4 +1,5 @@
 import Foundation
+import plate
     
 public extension HTTPResponse {
     /// Create a 200 OK response
@@ -22,9 +23,32 @@ public extension HTTPResponse {
     }
     
     /// Create a 401 Unauthorized response
-    static func unauthorized(body: String = "Unauthorized", headers: [String: String] = [:]) -> HTTPResponse {
+    static func unauthorized(
+        body: String = "Unauthorized",
+        headers: [String: String] = [:],
+    ) -> HTTPResponse {
         var h = headers
         h["WWW-Authenticate"] = "Bearer realm=\"server\""
+        return HTTPResponse(status: .unauthorized, headers: h, body: body)
+    }
+
+    static func unauthorized(
+        body: String = "Unauthorized",
+        headers: [String: String] = [:],
+        bearerRealm: String = "server"
+    ) -> HTTPResponse {
+        var h = headers
+        h["WWW-Authenticate"] = "Bearer realm=\(bearerRealm.escape())"
+        return HTTPResponse(status: .unauthorized, headers: h, body: body)
+    }
+
+    static func unauthorized(
+        body: String = "Unauthorized",
+        headers: [String: String] = [:],
+        bearerError: String = "invalid_authentication"
+    ) -> HTTPResponse {
+        var h = headers
+        h["WWW-Authenticate"] = "Bearer error=\(bearerError.escape())"
         return HTTPResponse(status: .unauthorized, headers: h, body: body)
     }
     
