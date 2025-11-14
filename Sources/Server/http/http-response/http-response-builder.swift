@@ -12,9 +12,9 @@ public struct HTTPResponseBuilder {
         let bodyData = response.body.data(using: .utf8) ?? Data()
         headers.set(HTTPConstants.contentLengthHeader, "\(bodyData.count)")
 
-        print("Response body before newline: '\(response.body.debugDescription)'")                                                 
-        print("Response body after newline: '\(body.debugDescription)'")
-        print("Content-Length will be: \(bodyData.count)")
+        // print("Response body before newline: '\(response.body.debugDescription)'")                                                 
+        // print("Response body after newline: '\(body.debugDescription)'")
+        // print("Content-Length will be: \(bodyData.count)")
         
         // Set default Content-Type if not provided
         if headers.get(HTTPConstants.contentTypeHeader) == nil {
