@@ -34,6 +34,19 @@ public struct HTTPClient: Sendable {
         body: String? = nil,
         auth: RequestAuth = .none,
     ) async throws -> HTTPResponse {
+        @Sendable
+        func timestamp() -> String { 
+            let fmt = ISO8601DateFormatter() 
+            return fmt.string(from: Date()) 
+        }
+        
+        @Sendable
+        func log(_ msg: String) {
+            if config.debug {
+                print("[\(timestamp())] HTTPClient: \(msg)")
+            }
+        }
+        
         let responseActor = ResponseActor()
         
         let conn = NWConnection(
@@ -41,6 +54,8 @@ public struct HTTPClient: Sendable {
             port: NWEndpoint.Port(rawValue: config.port)!,
             using: .tcp
         )
+        
+        log("Creating connection to \(config.host):\(config.port)")
         
         // Build headers with auth
         var allHeaders = headers
@@ -61,71 +76,61 @@ public struct HTTPClient: Sendable {
             body: body
         )
         
-        if config.debug {
-            print("DEBUG: Creating connection to \(config.host):\(config.port)")
-        }
+        log("Wire request:\n\(wireRequest.prefix(300))")
 
         let handler = RequestConnectionHandler(
             connection: conn,
             onSuccess: { response in
-                if config.debug {
-                    print("DEBUG: Got success response")
-                }
+                log("Handler received success response: \(response.status.code)")
                 Task {
                     await responseActor.setSuccess(response)
                 }
             },
             onError: { error in
-                if config.debug {
-                    print("DEBUG: Got error: \(error)")
-                }
+                log("Handler received error: \(error)")
                 Task {
                     await responseActor.setFailure(error)
                 }
-            }
+            },
+            debug: config.debug
         )
 
         conn.stateUpdateHandler = { state in
-            print("DEBUG: Connection state changed: \(state)")
+            log("Connection state: \(state)")
             switch state {
             case .ready:
-                if config.debug {
-                    print("DEBUG: Connection ready, sending request")
-                }
+                log("Connection ready, handler sending request")
                 handler.send(wireRequest)
             case .failed(let error):
-                if config.debug {
-                    print("DEBUG: Connection failed: \(error)")
-                }
+                log("Connection failed: \(error.localizedDescription)")
                 Task {
                     await responseActor.setFailure(.connectionFailed(error.localizedDescription))
                 }
             case .cancelled:
-                if config.debug {
-                    print("DEBUG: Connection cancelled")
-                }
+                log("Connection cancelled")
             default:
-                if config.debug {
-                    print("DEBUG: Connection state: \(state)")
-                }
+                log("Connection state update: \(state)")
             }
         }
 
-        if config.debug {
-            print("DEBUG: Starting connection")
-        }
-        conn.start(queue: DispatchQueue(label: "http-client"))
+        log("Starting connection on queue")
+        conn.start(queue: DispatchQueue(label: "http-client-\(UUID().uuidString)"))
         
         // Async timeout with polling
+        log("Waiting for response (timeout: \(config.timeout)s)")
         let deadline = Date().addingTimeInterval(config.timeout)
+        var pollCount = 0
         while await responseActor.getResult() == nil {
+            pollCount += 1
             if Date() > deadline {
+                log("Timeout after \(pollCount) polls")
                 conn.cancel()
                 throw ServerError.connectionFailed("Request timed out")
             }
             try await Task.sleep(nanoseconds: 10_000_000)
         }
         
+        log("Got result after \(pollCount) polls")
         return try (await responseActor.getResult())!.get()
     }
     
