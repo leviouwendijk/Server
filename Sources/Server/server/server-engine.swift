@@ -19,7 +19,7 @@ public actor ServerEngine: Sendable {
         self.config = config
         self.router = router
         self.statusRegistry = statusRegistry
-        self.logger = logger
+        self.logger = logger ?? (try? StandardLogger(name: config.name))
     }
     
     public func start() async throws {
