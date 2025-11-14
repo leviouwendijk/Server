@@ -79,11 +79,13 @@ final class RequestConnectionHandler: @unchecked Sendable {
         let httpTerminator = Data("\r\n\r\n".utf8)
 
         guard let range = buffer.range(of: httpTerminator) else {
+            log("HTTP terminator not found, waiting for more data")
             return
         }
 
-        // Found headers, now check if we have the full body
         let headerEnd = range.upperBound
+        log("Found HTTP terminator, headerEnd = \(headerEnd)")
+
         let headerData = buffer.subdata(in: 0..<headerEnd)
         let headerText = String(data: headerData, encoding: .utf8) ?? ""
 
@@ -96,18 +98,23 @@ final class RequestConnectionHandler: @unchecked Sendable {
                 if parts.count > 1, let length = Int(parts[1].trimmingCharacters(in: .whitespaces))
                 {
                     contentLength = length
+                    log("Parsed Content-Length: \(contentLength)")
                 }
             }
         }
 
-        // Check if we have the full body
         let totalNeeded = headerEnd + contentLength
+        log("Total needed: \(totalNeeded), buffer has: \(buffer.count)")
+
         guard buffer.count >= totalNeeded else {
-            return  // Wait for more data
+            log("Buffer incomplete, need \(totalNeeded) bytes but only have \(buffer.count)")
+            return
         }
 
         let responseData = buffer.subdata(in: 0..<totalNeeded)
         let responseText = String(data: responseData, encoding: .utf8) ?? ""
+
+        log("Extracted \(responseData.count) bytes, text length: \(responseText.count) chars")
 
         buffer.removeSubrange(0..<totalNeeded)
 
