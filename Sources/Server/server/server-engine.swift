@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import plate
 
 public actor ServerEngine: Sendable {
     private let config: ServerConfig
@@ -7,21 +8,28 @@ public actor ServerEngine: Sendable {
     private let statusRegistry: HTTPStatusRegistry
     private var listener: NWListener?
     private var clients: [ServerConnectionHandler] = []
+    private let logger: StandardLogger?
     
     public init(
         config: ServerConfig,
         router: Router,
-        statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry
+        statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
+        logger: StandardLogger? = nil
     ) {
         self.config = config
         self.router = router
         self.statusRegistry = statusRegistry
+        self.logger = logger
     }
     
     public func start() async throws {
         guard let nwPort = NWEndpoint.Port(rawValue: config.port) else {
             throw ServerError.invalidConfiguration("Invalid port: \(config.port)")
         }
+
+        await logger?.log(
+            "Starting server on \(config.host):\(config.port)", level: config.logLevel
+        )
         
         let params = NWParameters.tcp
         let listener = try NWListener(using: params, on: nwPort)
@@ -43,10 +51,12 @@ public actor ServerEngine: Sendable {
     }
     
     public func stop() async {
+        await logger?.log("Stopping server", level: .info)
         listener?.cancel()
     }
     
     private func handleNewConnection(_ connection: NWConnection) async {
+        await logger?.log("New connection from \(connection.endpoint)", level: .debug)
         let handler = ServerConnectionHandler(
             connection: connection,
             router: router,
@@ -59,23 +69,23 @@ public actor ServerEngine: Sendable {
     private func handleStateChange(_ state: NWListener.State) async {
         switch state {
         case .ready:
-            log("Server ready on \(config.host):\(config.port)", level: .info)
+            await logger?.log("Server ready on \(config.host):\(config.port)", level: .info)
         case .failed(let error):
-            log("Server failed: \(error)", level: .error)
+            await logger?.log("Server failed: \(error)", level: .error)
         case .cancelled:
-            log("Server cancelled", level: .info)
+            await logger?.log("Server cancelled", level: .info)
         case .waiting:
             break
         case .setup:
-            log("Server setting up...", level: .debug)
+            await logger?.log("Server setting up...", level: .debug)
         @unknown default:
-            log("Server unknown state", level: .debug)
+            await logger?.log("Server unknown state", level: .debug)
         }
     }
     
-    private func log(_ msg: String, level: LogLevel) {
-        if level.rawValue >= config.logLevel.rawValue {
-            print("[\(level.rawValue.uppercased())] \(msg)")
-        }
-    }
+    // private func log(_ msg: String, level: LogLevel) {
+    //     if level.rawValue >= config.logLevel.rawValue {
+    //         print("[\(level.label)] \(msg)")
+    //     }
+    // }
 }

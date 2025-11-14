@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import plate
 
 final class ServerConnectionHandler: @unchecked Sendable {
     private let connection: NWConnection

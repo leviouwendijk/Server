@@ -1,9 +1,9 @@
 import Foundation
 import plate
 
-public enum LogLevel: String, Sendable {
-    case debug, info, warn, error
-}
+// public enum LogLevel: String, Sendable {
+//     case debug, info, warn, error
+// }
 
 public struct ServerConfig: Sendable {
     public let name: String?
@@ -49,7 +49,7 @@ public struct ServerConfig: Sendable {
             self.logLevel = .info
         }
 
-        self.name = name
+        self.name = try? EnvironmentExtractor.value(.symbol("APP_NAME"))
         self.maxConnections = maxConnections
     }
 

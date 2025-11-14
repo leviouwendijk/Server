@@ -1,4 +1,5 @@
 import Foundation
+import plate
 
 public struct TestServer {
     public let config: ServerConfig
