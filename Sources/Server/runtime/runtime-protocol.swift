@@ -7,7 +7,7 @@ public protocol Runtime {
     var engine: ServerEngine { get }
 
     func routable() -> [Route]
-    func main() async
+    func run() async
 }
 
 extension Runtime {
@@ -16,7 +16,7 @@ extension Runtime {
     public var router: Router { Router(routes: routes) }
     public var engine: ServerEngine { ServerEngine(config: config, router: router) }
 
-    public func main() async {
+    public func run() async {
         do {
             try await engine.start()
             try await Task.sleep(nanoseconds: UInt64.max)
