@@ -80,18 +80,45 @@ final class ServerConnectionHandler: @unchecked Sendable {
 
     private func sendHTTPResponse(_ response: HTTPResponse) {
         let wire = HTTPResponseBuilder.build(response)
-        sendPlain(wire)
+        log("Sending HTTP response (\(wire.count) bytes)", level: .debug)
+        let payload = Data(wire.utf8)
+        connection.send(
+            content: payload,
+            completion: .contentProcessed { [weak self] error in
+                if let e = error {
+                    self?.log("Send error: \(e)", level: .error)
+                } else {
+                    self?.log("Response sent successfully", level: .debug)
+                }
+            })
     }
-    
+
     private func sendPlain(_ string: String) {
+        log("Sending plain text (\(string.count) bytes)", level: .debug)
         let payload = Data(string.utf8)
-        let framed = Data.withLengthPrefix(payload)
-        connection.send(content: framed, completion: .contentProcessed { error in
-            if let e = error {
-                self.log("Send error: \(e)", level: .error)
-            }
-        })
+        connection.send(
+            content: payload,
+            completion: .contentProcessed { [weak self] error in
+                if let e = error {
+                    self?.log("Send error: \(e)", level: .error)
+                }
+            })
     }
+
+    // private func sendHTTPResponse(_ response: HTTPResponse) {
+    //     let wire = HTTPResponseBuilder.build(response)
+    //     sendPlain(wire)
+    // }
+    
+    // private func sendPlain(_ string: String) {
+    //     let payload = Data(string.utf8)
+    //     let framed = Data.withLengthPrefix(payload)
+    //     connection.send(content: framed, completion: .contentProcessed { error in
+    //         if let e = error {
+    //             self.log("Send error: \(e)", level: .error)
+    //         }
+    //     })
+    // }
     
     private func log(_ msg: String, level: LogLevel) {
         if level.rawValue >= config.logLevel.rawValue {
