@@ -1,5 +1,5 @@
 {
-  "originHash" : "05cac0fa73d93ae5593394d8fb1f324ef05ae16fff5e0a202b270b37087786a3",
+  "originHash" : "054ddc1cd11bf572208cc69a9195eed49047135e84cb311321a207ae2b1990be",
   "pins" : [
     {
       "identity" : "pkl-swift",
@@ -34,7 +34,7 @@
       "location" : "https://github.com/leviouwendijk/Structures.git",
       "state" : {
         "branch" : "master",
-        "revision" : "19b0de73ee7cdedf6f6b2641716cb239527034de"
+        "revision" : "52696d556415cb97b1750ef2f95e235698bf9d37"
       }
     },
     {

@@ -3,19 +3,13 @@ import Structures
 import plate
 
 public extension HTTPResponse {
-    /// Create a JSON response from JSONValue
+    /// Create a JSON response from a dictionary of JSONValue
     static func json(
         _ object: [String: JSONValue],
         status: HTTPStatus = .ok,
         headers: [String: String] = [:]
     ) throws -> HTTPResponse {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        
-        let data = try encoder.encode(object)
-        guard let json = String(data: data, encoding: .utf8) else {
-            throw ServerError.responseEncodingFailed
-        }
+        let json = try JSONValue.object(object).toJSONString()
         
         var h = headers
         h["Content-Type"] = "application/json; charset=utf-8"
@@ -28,13 +22,7 @@ public extension HTTPResponse {
         status: HTTPStatus = .ok,
         headers: [String: String] = [:]
     ) throws -> HTTPResponse {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        
-        let data = try encoder.encode(value)
-        guard let json = String(data: data, encoding: .utf8) else {
-            throw ServerError.responseEncodingFailed
-        }
+        let json = try value.toJSONString()
         
         var h = headers
         h["Content-Type"] = "application/json; charset=utf-8"
@@ -47,13 +35,7 @@ public extension HTTPResponse {
         status: HTTPStatus = .ok,
         headers: [String: String] = [:]
     ) throws -> HTTPResponse {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        
-        let data = try encoder.encode(array)
-        guard let json = String(data: data, encoding: .utf8) else {
-            throw ServerError.responseEncodingFailed
-        }
+        let json = try JSONValue.array(array).toJSONString()
         
         var h = headers
         h["Content-Type"] = "application/json; charset=utf-8"
