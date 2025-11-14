@@ -6,17 +6,20 @@ public enum LogLevel: String, Sendable {
 }
 
 public struct ServerConfig: Sendable {
+    public let name: String?
     public let port: UInt16
     public let host: String
     public let logLevel: LogLevel
     public let maxConnections: Int?
     
     public init(
+        name: String? = nil,
         port: UInt16 = 9090,
         host: String = "127.0.0.1",
         logLevel: LogLevel = .info,
         maxConnections: Int? = nil
     ) {
+        self.name = name
         self.port = port
         self.host = host
         self.logLevel = logLevel
@@ -24,6 +27,7 @@ public struct ServerConfig: Sendable {
     }
 
     public init(
+        name: String? = nil,
         maxConnections: Int? = nil
     ) {
         if let portStr = try? EnvironmentExtractor.value(.symbol("PORT")),
@@ -45,10 +49,15 @@ public struct ServerConfig: Sendable {
             self.logLevel = .info
         }
 
+        self.name = name
         self.maxConnections = maxConnections
     }
 
     public static func externallyManagedProcess(maxConnections: Int? = nil) -> Self {
         return self.init(maxConnections: maxConnections)
+    }
+
+    public func startNotification() -> String {
+        return "\(name ?? "Application") server running on \(host):\(port)"
     }
 }
