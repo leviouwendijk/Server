@@ -11,8 +11,9 @@ public struct BearerMiddleware: Middleware {
         self.realmName = realmName
     }
     
-    public init(envSymbol: String, realmName: String = "api") throws {
-        self.expectedKey = try EnvironmentExtractor.value(.symbol(envSymbol))
+    // public init(envSymbol: String, realmName: String = "api") throws {
+    public init(envSymbol: String, realmName: String = "api") {
+        self.expectedKey = try? EnvironmentExtractor.value(.symbol(envSymbol))
         self.realmName = realmName
     }
     

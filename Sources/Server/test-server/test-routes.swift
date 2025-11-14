@@ -176,6 +176,7 @@ public let testRoutes = routes {
             .noContent()
         }
     }
+    .use(BearerMiddleware(envSymbol: "LIBTEST_API_KEY"))
 
     // MARK: - Config Routes (PKL Examples)
 
