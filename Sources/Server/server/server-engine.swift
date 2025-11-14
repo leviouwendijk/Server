@@ -78,4 +78,8 @@ public actor ServerEngine: Sendable {
             print("[\(level.rawValue.uppercased())] \(msg)")
         }
     }
+
+    public func startNotification(appName: String = "Application") {
+            print("Application server running on \(config.host):\(config.port)")
+    }
 }
