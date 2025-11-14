@@ -57,7 +57,7 @@ public struct ServerConfig: Sendable {
         return self.init(maxConnections: maxConnections)
     }
 
-    public func startNotification() -> String {
-        return "\(name ?? "Application") server running on \(host):\(port)"
-    }
+    // public func startNotification() -> String {
+    //     return "\(name ?? "Application") server running on \(host):\(port)"
+    // }
 }
