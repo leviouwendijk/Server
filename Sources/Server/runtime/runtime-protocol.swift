@@ -13,12 +13,12 @@ public protocol Runtime {
 extension Runtime {
     public static var config: ServerConfig { ServerConfig.externallyManagedProcess() }
     public static var routes: [Route] { routable() }
-    public static var router: Router { Router(routes: routes) }
-    public static var engine: ServerEngine { ServerEngine(config: config, router: router) }
+    public static var router: Router { Router(routes: self.routes) }
+    public static var engine: ServerEngine { ServerEngine(config: self.config, router: self.router) }
 
     public static func run() async {
         do {
-            try await engine.start()
+            try await self.engine.start()
             try await Task.sleep(nanoseconds: UInt64.max)
         } catch {
             print("Failed to start server: \(error.localizedDescription)")
