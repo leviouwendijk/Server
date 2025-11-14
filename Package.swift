@@ -1,0 +1,36 @@
+// swift-tools-version: 6.2
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
+import PackageDescription
+
+let package = Package(
+    name: "Server",
+    platforms: [
+        .macOS(.v15)
+    ],
+    products: [
+        .library(
+            name: "Server",
+            targets: ["Server"]
+        ),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/leviouwendijk/plate.git", branch: "master"),
+        .package(url: "https://github.com/leviouwendijk/Structures.git", branch: "master"),
+        .package(url: "https://github.com/apple/pkl-swift", from: "0.2.1"),
+    ],
+    targets: [
+        .target(
+            name: "Server",
+            dependencies: [
+                .product(name: "plate", package: "plate"),
+                .product(name: "Structures", package: "Structures"),
+                .product(name: "PklSwift", package: "pkl-swift"),
+            ]
+        ),
+        .testTarget(
+            name: "ServerTests",
+            dependencies: ["Server"]
+        ),
+    ]
+)
