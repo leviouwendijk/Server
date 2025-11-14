@@ -9,7 +9,7 @@ public struct HTTPResponseBuilder {
         }
 
         // Calculate and set Content-Length
-        let bodyData = response.body.data(using: .utf8) ?? Data()
+        let bodyData = body.data(using: .utf8) ?? Data()
         headers.set(HTTPConstants.contentLengthHeader, "\(bodyData.count)")
 
         // print("Response body before newline: '\(response.body.debugDescription)'")                                                 
