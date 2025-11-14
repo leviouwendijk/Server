@@ -26,6 +26,7 @@ public struct HTTPClient: Sendable {
     
     // MARK: - Main Send Method
     
+    // Server/Sources/Server/Client/HTTPClient.swift
     public func send(
         method: HTTPMethod,
         path: String,
@@ -84,20 +85,24 @@ public struct HTTPClient: Sendable {
             }
         )
 
-        conn.stateUpdateHandler = { [weak handler] state in
+        conn.stateUpdateHandler = { state in
             print("DEBUG: Connection state changed: \(state)")
             switch state {
             case .ready:
                 if config.debug {
                     print("DEBUG: Connection ready, sending request")
                 }
-                handler?.send(wireRequest)
+                handler.send(wireRequest)
             case .failed(let error):
                 if config.debug {
                     print("DEBUG: Connection failed: \(error)")
                 }
                 Task {
                     await responseActor.setFailure(.connectionFailed(error.localizedDescription))
+                }
+            case .cancelled:
+                if config.debug {
+                    print("DEBUG: Connection cancelled")
                 }
             default:
                 if config.debug {
