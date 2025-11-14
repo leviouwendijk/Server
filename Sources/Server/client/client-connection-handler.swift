@@ -112,7 +112,11 @@ final class RequestConnectionHandler: @unchecked Sendable {
         buffer.removeSubrange(0..<totalNeeded)
 
         do {
+            log("About to parse response text (\(responseText.count) chars):\n\(responseText)")
             let response = try HTTPResponseParser.parse(responseText)
+            log(
+                "Parsed response - status: \(response.status.code), body length: \(response.body.count), body: '\(response.body)'"
+            )
             onSuccess(response)
         } catch {
             onError(.responseEncodingFailed)
