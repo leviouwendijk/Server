@@ -79,7 +79,7 @@ public actor ServerEngine: Sendable {
         }
     }
 
-    public func startNotification(appName: String = "Application") {
-            print("Application server running on \(config.host):\(config.port)")
+    public func startNotification(appName: String = "Application") -> String {
+        return "Application server running on \(config.host):\(config.port)"
     }
 }
