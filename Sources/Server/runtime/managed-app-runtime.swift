@@ -1,7 +1,7 @@
 import Foundation
 
-struct ManagedAppRuntime {
-    static func run(routes: [Route]) async {
+public struct ManagedAppRuntime {
+    public static func run(routes: [Route]) async {
         let config = ServerConfig.externallyManagedProcess()
         let router = Router(routes: routes)
         let engine = ServerEngine(config: config, router: router)
