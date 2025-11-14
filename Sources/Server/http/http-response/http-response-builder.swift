@@ -3,15 +3,18 @@ import Foundation
 public struct HTTPResponseBuilder {
     public static func build(_ response: HTTPResponse) -> String {
         var headers = HTTPHeaders(response.headers)
-
         var body = response.body
         if !body.isEmpty && !body.hasSuffix("\n") {
             body.append("\n")
         }
-        
+
         // Calculate and set Content-Length
         let bodyData = response.body.data(using: .utf8) ?? Data()
         headers.set(HTTPConstants.contentLengthHeader, "\(bodyData.count)")
+
+        print("Response body before newline: '\(response.body.debugDescription)'")                                                 
+        print("Response body after newline: '\(body.debugDescription)'")
+        print("Content-Length will be: \(bodyData.count)")
         
         // Set default Content-Type if not provided
         if headers.get(HTTPConstants.contentTypeHeader) == nil {
