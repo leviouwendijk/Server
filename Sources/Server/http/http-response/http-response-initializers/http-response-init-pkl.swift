@@ -3,6 +3,8 @@ import Structures
 import plate
 
 internal func renderJSONValueAsPKL(_ value: JSONValue, indent: Int = 0) -> String {
+    let indentStr = String(repeating: " ", count: indent * StandardIndentation.size)
+    
     switch value {
     case .null:
         return "null"
@@ -18,24 +20,24 @@ internal func renderJSONValueAsPKL(_ value: JSONValue, indent: Int = 0) -> Strin
         if arr.isEmpty {
             return "[]"
         }
-        let items = arr.map { renderJSONValueAsPKL($0, indent: indent + 1) }
+        let childIndent = indent + 1
+        let childIndentStr = String(repeating: " ", count: childIndent * StandardIndentation.size)
+        let items = arr.map { childIndentStr + renderJSONValueAsPKL($0, indent: childIndent) }
             .joined(separator: "\n")
-            .indent(StandardIndentation.size, times: indent + 1)
-        let closingBracket = "]".indent(StandardIndentation.size, times: indent)
-        return "[\n\(items)\n\(closingBracket)"
+        return "[\n\(items)\n\(indentStr)]"
     case .object(let obj):
         if obj.isEmpty {
             return "{}"
         }
+        let childIndent = indent + 1
+        let childIndentStr = String(repeating: " ", count: childIndent * StandardIndentation.size)
         let items = obj.sorted { $0.key < $1.key }
             .map { key, val in
-                let renderedVal = renderJSONValueAsPKL(val, indent: indent + 1)
-                return "\(key) = \(renderedVal)"
+                let renderedVal = renderJSONValueAsPKL(val, indent: childIndent)
+                return "\(childIndentStr)\(key) = \(renderedVal)"
             }
             .joined(separator: "\n")
-            .indent(StandardIndentation.size, times: indent + 1)
-        let closingBrace = "}".indent(StandardIndentation.size, times: indent)
-        return "{\n\(items)\n\(closingBrace)"
+        return "{\n\(items)\n\(indentStr)}"
     }
 }
 
