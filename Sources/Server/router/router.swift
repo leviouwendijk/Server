@@ -20,7 +20,7 @@ public struct Router: Sendable {
                 let next = handler
                 let mw = middleware
                 handler = { req, router in
-                    await mw.handler(req, router, next)
+                    await mw.handle(req, router, next: next)
                 }
             }
             return await handler(request, self)
