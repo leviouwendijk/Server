@@ -31,7 +31,7 @@ public struct HTTPClient: Sendable {
         path: String,
         headers: [String: String] = [:],
         body: String? = nil,
-        auth: RequestAuth = .none
+        auth: RequestAuth = .none,
     ) async throws -> HTTPResponse {
         let responseActor = ResponseActor()
         
@@ -60,33 +60,55 @@ public struct HTTPClient: Sendable {
             body: body
         )
         
+        if config.debug {
+            print("DEBUG: Creating connection to \(config.host):\(config.port)")
+        }
+
         let handler = RequestConnectionHandler(
             connection: conn,
             onSuccess: { response in
+                if config.debug {
+                    print("DEBUG: Got success response")
+                }
                 Task {
                     await responseActor.setSuccess(response)
                 }
             },
             onError: { error in
+                if config.debug {
+                    print("DEBUG: Got error: \(error)")
+                }
                 Task {
                     await responseActor.setFailure(error)
                 }
             }
         )
-        
+
         conn.stateUpdateHandler = { [weak handler] state in
+            print("DEBUG: Connection state changed: \(state)")
             switch state {
             case .ready:
+                if config.debug {
+                    print("DEBUG: Connection ready, sending request")
+                }
                 handler?.send(wireRequest)
             case .failed(let error):
+                if config.debug {
+                    print("DEBUG: Connection failed: \(error)")
+                }
                 Task {
                     await responseActor.setFailure(.connectionFailed(error.localizedDescription))
                 }
             default:
-                break
+                if config.debug {
+                    print("DEBUG: Connection state: \(state)")
+                }
             }
         }
-        
+
+        if config.debug {
+            print("DEBUG: Starting connection")
+        }
         conn.start(queue: DispatchQueue(label: "http-client"))
         
         // Async timeout with polling
