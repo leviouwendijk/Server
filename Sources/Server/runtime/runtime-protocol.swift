@@ -1,24 +1,24 @@
 import Foundation
 
 public protocol Runtime {
-    static var config: ServerConfig { get }
-    static var routes: [Route] { get }
-    static var router: Router { get }
-    static var engine: ServerEngine { get }
+    var config: ServerConfig { get }
+    var routes: [Route] { get }
+    var router: Router { get }
+    var engine: ServerEngine { get }
 
-    static func routable() -> [Route]
-    static func run() async
+    func routable() -> [Route]
+    func run() async
 }
 
 extension Runtime {
-    public static var config: ServerConfig { ServerConfig.externallyManagedProcess() }
-    public static var routes: [Route] { routable() }
-    public static var router: Router { Router(routes: self.routes) }
-    public static var engine: ServerEngine { ServerEngine(config: self.config, router: self.router) }
+    public var config: ServerConfig { ServerConfig.externallyManagedProcess() }
+    public var routes: [Route] { routable() }
+    public var router: Router { Router(routes: routes) }
+    public var engine: ServerEngine { ServerEngine(config: config, router: router) }
 
-    public static func run() async {
+    public func run() async {
         do {
-            try await self.engine.start()
+            try await engine.start()
             try await Task.sleep(nanoseconds: UInt64.max)
         } catch {
             print("Failed to start server: \(error.localizedDescription)")
