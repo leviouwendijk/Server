@@ -3,6 +3,11 @@ import Foundation
 public struct HTTPResponseBuilder {
     public static func build(_ response: HTTPResponse) -> String {
         var headers = HTTPHeaders(response.headers)
+
+        var body = response.body
+        if !body.isEmpty && !body.hasSuffix("\n") {
+            body.append("\n")
+        }
         
         // Calculate and set Content-Length
         let bodyData = response.body.data(using: .utf8) ?? Data()
@@ -25,6 +30,6 @@ public struct HTTPResponseBuilder {
         lines.append("")  // blank line
         
         let headerString = lines.joined(separator: HTTPConstants.crlf)
-        return headerString + HTTPConstants.crlf + response.body + "\n"
+        return headerString + HTTPConstants.crlf + body
     }
 }
