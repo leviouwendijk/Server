@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "Server",
     platforms: [
-        .macOS(.v15)
+        .macOS(.v13)
     ],
     products: [
         .library(
