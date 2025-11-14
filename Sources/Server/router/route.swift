@@ -29,18 +29,3 @@ public struct Route: Sendable {
     }
 }
 
-// public struct Route: Sendable {
-//     public let method: HTTPMethod
-//     public let path: String
-//     public let handler: @Sendable (HTTPRequest, Router) async -> HTTPResponse
-    
-//     public init(
-//         method: HTTPMethod,
-//         path: String,
-//         handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
-//     ) {
-//         self.method = method
-//         self.path = path
-//         self.handler = handler
-//     }
-// }

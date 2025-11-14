@@ -19,7 +19,7 @@ public let testRoutes = routes {
         // var resp = HTTPResponse(status: .ok, body: lines)
         // resp.headers["Content-Type"] = "text/plain; charset=utf-8"
         // return resp
-        .text(router.listRoutes().joined(separator: "\n"))
+        .text(router.listRoutesAsStrings().joined(separator: "\n"))
     }
     
     // Echo Routes

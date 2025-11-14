@@ -32,7 +32,7 @@ public struct TestServer {
         try await engine.start()
         print("🚀 Test server running on \(config.host):\(config.port)")
         print("📍 Routes available:")
-        for route in router.listRoutes() {
+        for route in router.listRoutesAsStrings() {
             print("   \(route)")
         }
     }
