@@ -60,24 +60,38 @@ final class ServerConnectionHandler: @unchecked Sendable {
 
     private func processBuffer() {
         log("processBuffer called, buffer size: \(buffer.count)", level: .debug)
-        // Look for HTTP request terminator: \r\n\r\n
+
         let httpTerminator = Data("\r\n\r\n".utf8)
-        
+
         guard let range = buffer.range(of: httpTerminator) else {
-            return  // Not a complete request yet
+            log("HTTP terminator not found", level: .debug)
+            return
         }
-        
-        // Extract complete request
-        let requestEnd = range.upperBound
-        let requestData = buffer.subdata(in: 0..<requestEnd)
+
+        let headerEnd = range.upperBound
+        log("Found HTTP terminator, headerEnd = \(headerEnd)", level: .debug)
+
+        let headerData = buffer.subdata(in: 0..<headerEnd)
+        let contentLength = HTTPRequestParser.extractContentLength(from: headerData) ?? 0
+        log("Parsed Content-Length: \(contentLength)", level: .debug)
+
+        let totalNeeded = headerEnd + contentLength
+        log("Total needed: \(totalNeeded), buffer has: \(buffer.count)", level: .debug)
+
+        guard buffer.count >= totalNeeded else {
+            log("Buffer incomplete, waiting for more data", level: .debug)
+            return
+        }
+
+        let requestData = buffer.subdata(in: 0..<totalNeeded)
         let requestText = String(data: requestData, encoding: .utf8) ?? ""
-        
-        // Remove from buffer
-        buffer.removeSubrange(0..<requestEnd)
-        
+        log("Extracted complete request (\(requestText.count) chars)", level: .debug)
+
+        buffer.removeSubrange(0..<totalNeeded)
+
         handleText(requestText)
     }
-    
+
     private func handleText(_ text: String) {
         log("handleText called with \(text.count) bytes", level: .debug)
         log("Request text: \(text.prefix(100))", level: .debug)

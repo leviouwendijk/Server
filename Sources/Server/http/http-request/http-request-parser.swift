@@ -67,4 +67,21 @@ public struct HTTPRequestParser {
         
         return headers
     }
+
+    public static func extractContentLength(from headerData: Data) -> Int? {
+        guard let text = String(data: headerData, encoding: .utf8) else { return nil }
+        
+        let lines = text.split(separator: "\r\n")
+        for line in lines {
+            let lower = line.lowercased()
+            if lower.hasPrefix("content-length:") {
+                let parts = line.split(separator: ":")
+                if parts.count > 1 {
+                    let value = parts[1].trimmingCharacters(in: .whitespaces)
+                    return Int(value)
+                }
+            }
+        }
+        return nil
+    }
 }
