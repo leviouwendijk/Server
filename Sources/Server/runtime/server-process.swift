@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ServerRuntime {
+public struct ServerProcess {
     public static func run(
         config: ServerConfig = ServerConfig.externallyManagedProcess(),
         routes: [Route]
