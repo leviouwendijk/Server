@@ -1,7 +1,7 @@
 import Foundation
 
 public enum StandardRoutes { 
-    public func listRoutes() -> Route {
+    public static func listRoutes() -> Route {
         get("routes") { _, router in
             do {
                 return try router.listRoutes().response()
