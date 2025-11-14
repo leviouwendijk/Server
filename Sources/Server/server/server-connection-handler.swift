@@ -45,14 +45,33 @@ final class ServerConnectionHandler: @unchecked Sendable {
         }
     }
     
+    // private func processBuffer() {
+    //     while let messageData = buffer.readLengthPrefixedMessage() {
+    //         if let text = String(data: messageData, encoding: .utf8) {
+    //             handleText(text)
+    //         } else {
+    //             log("Received binary data (\(messageData.count) bytes)", level: .debug)
+    //         }
+    //     }
+    // }
+
     private func processBuffer() {
-        while let messageData = buffer.readLengthPrefixedMessage() {
-            if let text = String(data: messageData, encoding: .utf8) {
-                handleText(text)
-            } else {
-                log("Received binary data (\(messageData.count) bytes)", level: .debug)
-            }
+        // Look for HTTP request terminator: \r\n\r\n
+        let httpTerminator = Data("\r\n\r\n".utf8)
+        
+        guard let range = buffer.range(of: httpTerminator) else {
+            return  // Not a complete request yet
         }
+        
+        // Extract complete request
+        let requestEnd = range.upperBound
+        let requestData = buffer.subdata(in: 0..<requestEnd)
+        let requestText = String(data: requestData, encoding: .utf8) ?? ""
+        
+        // Remove from buffer
+        buffer.removeSubrange(0..<requestEnd)
+        
+        handleText(requestText)
     }
     
     private func handleText(_ text: String) {
