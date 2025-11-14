@@ -25,6 +25,6 @@ public struct HTTPResponseBuilder {
         lines.append("")  // blank line
         
         let headerString = lines.joined(separator: HTTPConstants.crlf)
-        return headerString + HTTPConstants.crlf + response.body
+        return headerString + HTTPConstants.crlf + response.body + "\n"
     }
 }
