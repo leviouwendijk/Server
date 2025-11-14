@@ -76,42 +76,52 @@ final class RequestConnectionHandler: @unchecked Sendable {
     
     private func processBuffer() {
         log("Processing buffer (\(buffer.count) bytes)")
-        
-        // Look for HTTP response terminator: \r\n\r\n
         let httpTerminator = Data("\r\n\r\n".utf8)
-        
+
         guard let range = buffer.range(of: httpTerminator) else {
-            log("HTTP terminator not found yet, waiting for more data")
             return
         }
-        
-        log("Found HTTP terminator at offset \(range.lowerBound)")
-        
-        // Extract complete response
-        let responseEnd = range.upperBound
-        let responseData = buffer.subdata(in: 0..<responseEnd)
+
+        // Found headers, now check if we have the full body
+        let headerEnd = range.upperBound
+        let headerData = buffer.subdata(in: 0..<headerEnd)
+        let headerText = String(data: headerData, encoding: .utf8) ?? ""
+
+        // Parse headers to get Content-Length
+        let headLines = headerText.split(separator: "\n")
+        var contentLength = 0
+        for line in headLines {
+            if line.lowercased().hasPrefix("content-length:") {
+                let parts = line.split(separator: ":")
+                if parts.count > 1, let length = Int(parts[1].trimmingCharacters(in: .whitespaces))
+                {
+                    contentLength = length
+                }
+            }
+        }
+
+        // Check if we have the full body
+        let totalNeeded = headerEnd + contentLength
+        guard buffer.count >= totalNeeded else {
+            return  // Wait for more data
+        }
+
+        let responseData = buffer.subdata(in: 0..<totalNeeded)
         let responseText = String(data: responseData, encoding: .utf8) ?? ""
-        
-        log("Parsed response text (\(responseText.count) chars):\n\(responseText.prefix(200))")
-        
-        // Remove from buffer
-        buffer.removeSubrange(0..<responseEnd)
-        
-        // Parse and handle
+
+        buffer.removeSubrange(0..<totalNeeded)
+
         do {
-            log("Parsing HTTP response")
             let response = try HTTPResponseParser.parse(responseText)
-            log("Successfully parsed response: \(response.status.code) \(response.status.reason)")
             onSuccess(response)
         } catch {
-            log("Failed to parse response: \(error.localizedDescription)")
             onError(.responseEncodingFailed)
         }
-        
+
         connection.cancel()
         markDone()
     }
-    
+
     func send(_ string: String) {
         log("Sending request (\(string.count) bytes)")
         let payload = Data(string.utf8)
