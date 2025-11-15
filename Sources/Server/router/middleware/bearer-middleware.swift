@@ -27,8 +27,8 @@ public struct BearerMiddleware: Middleware {
         self.init(symbol: symbol, realmName: realmName)
     }
 
-    public init(config: ServerConfig, realmName: String = "api") throws {
-        let symbol = try config.autoSynthesizeTokenSymbol()
+    public init(config: ServerConfig, realmName: String = "api", suffix: SynthesizedSymbol = .api_key) throws {
+        let symbol = try config.autoSynthesizeTokenSymbol(suffix: suffix)
         self.init(symbol: symbol, realmName: realmName)
     }
 

@@ -61,8 +61,8 @@ public struct ServerConfig: Sendable {
     //     return "\(name ?? "Application") server running on \(host):\(port)"
     // }
 
-    public func autoSynthesizeTokenSymbol() throws -> String {
-        let options = try SyntheticSymbolOptions(name: name)
+    public func autoSynthesizeTokenSymbol(suffix: SynthesizedSymbol = .api_key) throws -> String {
+        let options = try SyntheticSymbolOptions(name: name, suffix: suffix)
         return SynthesizedSymbol.synthesize(using: options)
     }
 }
