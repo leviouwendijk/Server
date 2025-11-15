@@ -92,12 +92,13 @@ public struct ServerConfig: Sendable {
 
     public func keys() throws -> CryptographicKeyPair {
         let n = try resolveName()
-        let pub = try CryptographicKeyOperation.loadKey(name: n, .public)
-        let priv = try CryptographicKeyOperation.loadKey(name: n, .private)
-        return .init(
-            publicKey: pub,
-            privateKey: priv
-        )
+        // let pub = try CryptographicKeyOperation.loadKey(name: n, .public)
+        // let priv = try CryptographicKeyOperation.loadKey(name: n, .private)
+        // return .init(
+        //     publicKey: pub,
+        //     privateKey: priv
+        // )
+        return try CryptographicKeyOperation.keys(prefix: n)
     }
 }
 

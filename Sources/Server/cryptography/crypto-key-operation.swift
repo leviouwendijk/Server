@@ -364,3 +364,30 @@ extension CryptographicKeyOperation {
         )
     }
 }
+
+extension CryptographicKeyOperation {
+    internal static func keys(
+        prefix: String,
+        replacer: EnvironmentReplacer = .init(
+            replacements: [
+                .variable(key: "$HOME", replacement: .home)
+            ]
+        )
+    ) throws -> CryptographicKeyPair {
+        let pubPath = try EnvironmentExtractor.value(
+            name: prefix,
+            suffix: .public_key_path,
+            replacer: replacer
+        )
+        let privPath = try EnvironmentExtractor.value(
+            name: prefix,
+            suffix: .private_key_path,
+            replacer: replacer
+        )
+
+        let publicKey  = try CryptographicKeyOperation.loadPublicKey(at: pubPath)
+        let privateKey = try CryptographicKeyOperation.loadPrivateKey(at: privPath)
+
+        return CryptographicKeyPair(publicKey: publicKey, privateKey: privateKey)
+    }
+}
