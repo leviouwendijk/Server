@@ -1,6 +1,31 @@
 import Foundation
 import plate
 
+public enum ConfigError: Error, LocalizedError {
+    case failedToResolveName
+    
+    public var errorDescription: String? {
+        switch self {
+        case .failedToResolveName:
+            return "Failed to resolve name"
+        }
+    }
+
+    public var failureReason: String? {
+        switch self {
+        case .failedToResolveName:
+            return "The name parameter is empty"
+        }
+    }
+    
+    public var recoverySuggestion: String? {
+        switch self {
+        case .failedToResolveName:
+            return "Ensure the name parameter is set or passed through the environment (ex.: 'APP_NAME')"
+        }
+    }
+}
+
 public struct ServerConfig: Sendable {
     public let name: String?
     public let port: UInt16
@@ -56,5 +81,12 @@ public struct ServerConfig: Sendable {
     public func autoSynthesizeTokenSymbol(suffix: SynthesizedSymbol = .api_key) throws -> String {
         let options = SyntheticSymbolOptions(suffix: suffix)
         return try SynthesizedSymbol.synthesize(name: name, using: options)
+    }
+
+    public func resolveName() throws -> String {
+        guard let name else {
+            throw ConfigError.failedToResolveName
+        }
+        return name
     }
 }
