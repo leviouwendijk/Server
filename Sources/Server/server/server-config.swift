@@ -49,6 +49,7 @@ public struct ServerConfig: Sendable {
 
     public init(
         name: String? = nil,
+        logLevel: LogLevel? = nil,
         maxConnections: Int? = nil
     ) {
         if let portStr = try? EnvironmentExtractor.value(.symbol("PORT")),
@@ -64,18 +65,23 @@ public struct ServerConfig: Sendable {
             self.host = "127.0.0.1"
         }
         
-        if let levelStr = try? EnvironmentExtractor.value(.symbol("LOG_LEVEL")) {
+        if let log = logLevel { // first passed arg
+            self.logLevel = log
+        } else if let levelStr = try? EnvironmentExtractor.value(.symbol("LOG_LEVEL")) { // then env
             self.logLevel = LogLevel(rawValue: levelStr.lowercased()) ?? .info
         } else {
-            self.logLevel = .info
+            self.logLevel = .info // then defaulft
         }
 
         self.name = try? EnvironmentExtractor.value(.symbol("APP_NAME"))
         self.maxConnections = maxConnections
     }
 
-    public static func externallyManagedProcess(maxConnections: Int? = nil) -> Self {
-        return self.init(maxConnections: maxConnections)
+    public static func externallyManagedProcess(
+        logLevel: LogLevel? = nil,
+        maxConnections: Int? = nil,
+    ) -> Self {
+        return self.init(logLevel: logLevel, maxConnections: maxConnections)
     }
 
     public func autoSynthesizeTokenSymbol(suffix: SynthesizedSymbol = .api_key) throws -> String {
