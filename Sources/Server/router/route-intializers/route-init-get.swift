@@ -35,7 +35,7 @@ public func get(
     Route(
         method: .get,
         path: route_default_root,
-        handler: { request, _ in 
+        handler: { _ , _ in 
             await handler() 
         }
     )
@@ -79,7 +79,7 @@ public func get(
     Route(
         method: .get,
         path: joinPath(components),
-        handler: { request, _ in 
+        handler: { _ , _ in 
             await handler() 
         }
     )
