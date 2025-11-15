@@ -22,10 +22,9 @@ public func post(
     Route(
         method: .post,
         path: route_default_root,
-        handler: { request, _ in 
+    ) { request, _ in 
             await handler(request) 
-        }
-    )
+    }
 }
 
 // parameterless
@@ -35,10 +34,9 @@ public func post(
     Route(
         method: .post,
         path: route_default_root,
-        handler: { _ , _ in 
+    ) { _ , _ in 
             await handler() 
-        }
-    )
+    }
 }
 
 // ----------------------------------
@@ -65,10 +63,9 @@ public func post(
     Route(
         method: .post,
         path: joinPath(components),
-        handler: { request, _ in 
-            await handler(request) 
-        }
-    )
+    ) { request, _ in 
+        await handler(request) 
+    }
 }
 
 // parameterless
@@ -79,8 +76,7 @@ public func post(
     Route(
         method: .post,
         path: joinPath(components),
-        handler: { _ , _ in 
-            await handler() 
-        }
-    )
+    ) { _ , _ in 
+        await handler() 
+    }
 }
