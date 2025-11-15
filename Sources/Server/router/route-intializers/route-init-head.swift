@@ -17,28 +17,26 @@ public func head(
 
 // request
 public func head(
-    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+    request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 ) -> Route {
     Route(
         method: .head,
         path: route_default_root,
-        handler: { request, _ in 
-            await handler(request) 
-        }
-    )
+    ) { req, _ in 
+        await request(req) 
+    }
 }
 
 // parameterless
 public func head(
-    handler: @Sendable @escaping () async -> HTTPResponse
+    body: @Sendable @escaping () async -> HTTPResponse
 ) -> Route {
     Route(
         method: .head,
         path: route_default_root,
-        handler: { request, _ in 
-            await handler() 
-        }
-    )
+    ) { _ , _ in 
+        await body() 
+    }
 }
 
 // ----------------------------------
@@ -60,27 +58,25 @@ public func head(
 // request
 public func head(
     _ components: String...,
-    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+    request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 ) -> Route {
     Route(
         method: .head,
         path: joinPath(components),
-        handler: { request, _ in 
-            await handler(request) 
-        }
-    )
+    ) { req, _ in 
+        await request(req) 
+    }
 }
 
 // parameterless
 public func head(
     _ components: String...,
-    handler: @Sendable @escaping () async -> HTTPResponse
+    body: @Sendable @escaping () async -> HTTPResponse
 ) -> Route {
     Route(
         method: .head,
         path: joinPath(components),
-        handler: { request, _ in 
-            await handler() 
-        }
-    )
+    ) { _ , _ in 
+        await body() 
+    }
 }

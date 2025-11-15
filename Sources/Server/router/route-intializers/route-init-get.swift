@@ -17,28 +17,26 @@ public func get(
 
 // request
 public func get(
-    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+    request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 ) -> Route {
     Route(
         method: .get,
         path: route_default_root,
-        handler: { request, _ in 
-            await handler(request) 
-        }
-    )
+    ) { req, _ in 
+        await request(req) 
+    }
 }
 
 // parameterless
 public func get(
-    handler: @Sendable @escaping () async -> HTTPResponse
+    body: @Sendable @escaping () async -> HTTPResponse
 ) -> Route {
     Route(
         method: .get,
         path: route_default_root,
-        handler: { _ , _ in 
-            await handler() 
-        }
-    )
+    ) { _ , _ in 
+        await body() 
+    }
 }
 
 // ----------------------------------
@@ -60,27 +58,25 @@ public func get(
 // request
 public func get(
     _ components: String...,
-    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+    request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 ) -> Route {
     Route(
         method: .get,
         path: joinPath(components),
-        handler: { request, _ in 
-            await handler(request) 
-        }
-    )
+    ) { req, _ in 
+        await request(req) 
+    }
 }
 
 // parameterless
 public func get(
     _ components: String...,
-    handler: @Sendable @escaping () async -> HTTPResponse
+    body: @Sendable @escaping () async -> HTTPResponse
 ) -> Route {
     Route(
         method: .get,
         path: joinPath(components),
-        handler: { _ , _ in 
-            await handler() 
-        }
-    )
+    ) { _ , _ in 
+        await body() 
+    }
 }

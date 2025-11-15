@@ -17,28 +17,26 @@ public func patch(
 
 // request
 public func patch(
-    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+    request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 ) -> Route {
     Route(
         method: .patch,
         path: route_default_root,
-        handler: { request, _ in 
-            await handler(request) 
-        }
-    )
+    ) { req, _ in 
+        await request(req) 
+    }
 }
 
 // parameterless
 public func patch(
-    handler: @Sendable @escaping () async -> HTTPResponse
+    body: @Sendable @escaping () async -> HTTPResponse
 ) -> Route {
     Route(
         method: .patch,
         path: route_default_root,
-        handler: { request, _ in 
-            await handler() 
-        }
-    )
+    ) { _ , _ in 
+        await body() 
+    }
 }
 
 // ----------------------------------
@@ -60,27 +58,25 @@ public func patch(
 // request
 public func patch(
     _ components: String...,
-    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+    request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 ) -> Route {
     Route(
         method: .patch,
         path: joinPath(components),
-        handler: { request, _ in 
-            await handler(request) 
-        }
-    )
+    ) { req, _ in 
+        await request(req) 
+    }
 }
 
 // parameterless
 public func patch(
     _ components: String...,
-    handler: @Sendable @escaping () async -> HTTPResponse
+    body: @Sendable @escaping () async -> HTTPResponse
 ) -> Route {
     Route(
         method: .patch,
         path: joinPath(components),
-        handler: { request, _ in 
-            await handler() 
-        }
-    )
+    ) { _ , _ in 
+        await body() 
+    }
 }
