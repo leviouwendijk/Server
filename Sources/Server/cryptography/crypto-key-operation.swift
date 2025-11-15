@@ -302,3 +302,18 @@ public enum CryptographicKeyOperation {
         return Data(base64Encoded: t)
     }
 }
+
+extension CryptographicKeyOperation {
+    public static func loadKey(_ type: CryptographicKeyType, at path: String) throws -> SecKey {
+        switch type {
+        case .public:
+            try loadPublicKey(at: path)
+        case .private:
+            try loadPrivateKey(at: path)
+        }
+    }
+
+    public static func load(_ type: CryptographicKeyType, at path: String) throws -> SecKey {
+        return try loadKey(type, at: path)
+    }
+}
