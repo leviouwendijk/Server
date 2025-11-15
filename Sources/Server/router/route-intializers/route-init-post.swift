@@ -1,9 +1,5 @@
 import Foundation
 
-// ----------------------------------
-// "/" defaults
-// ----------------------------------
-
 // request + router
 public func post(
     handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
@@ -15,6 +11,19 @@ public func post(
     )
 }
 
+// request + router
+public func post(
+    _ components: String...,
+    handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .post,
+        path: joinPath(components),
+        handler: handler
+    )
+}
+
+
 // request
 public func post(
     handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
@@ -22,6 +31,20 @@ public func post(
     Route(
         method: .post,
         path: route_default_root,
+        handler: { request, _ in 
+            await handler(request) 
+        }
+    )
+}
+
+// request
+public func post(
+    _ components: String...,
+    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .post,
+        path: joinPath(components),
         handler: { request, _ in 
             await handler(request) 
         }
@@ -37,36 +60,6 @@ public func post(
         path: route_default_root,
         handler: { request, _ in 
             await handler() 
-        }
-    )
-}
-
-// ----------------------------------
-// joined variadic path components
-// ----------------------------------
-
-// request + router
-public func post(
-    _ components: String...,
-    handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
-) -> Route {
-    Route(
-        method: .post,
-        path: joinPath(components),
-        handler: handler
-    )
-}
-
-// request
-public func post(
-    _ components: String...,
-    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
-) -> Route {
-    Route(
-        method: .post,
-        path: joinPath(components),
-        handler: { request, _ in 
-            await handler(request) 
         }
     )
 }
