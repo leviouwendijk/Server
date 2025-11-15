@@ -1,6 +1,32 @@
 import Foundation
 
 public struct ServerProcess {
+    public let config: ServerConfig
+    public let routes: [Route]
+    public let router: Router
+    public let engine: ServerEngine
+
+    public init(
+        config: ServerConfig = ServerConfig.externallyManagedProcess(),
+        routes: [Route]
+    ) {
+        self.config = config
+        self.routes = routes
+        self.router = Router(routes: routes)
+        self.engine = ServerEngine(config: config, router: router)
+    }
+
+    /// Instance entry point
+    public func run() async {
+        do {
+            try await engine.start()
+            try await Task.sleep(nanoseconds: UInt64.max)
+        } catch {
+            print("Failed to start server: \(error.localizedDescription)")
+        }
+    }
+
+    /// Static entry point
     public static func run(
         config: ServerConfig = ServerConfig.externallyManagedProcess(),
         routes: [Route]
