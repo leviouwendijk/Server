@@ -54,7 +54,7 @@ public struct ServerConfig: Sendable {
     }
 
     public func autoSynthesizeTokenSymbol(suffix: SynthesizedSymbol = .api_key) throws -> String {
-        let options = try SyntheticSymbolOptions(name: name, suffix: suffix)
-        return SynthesizedSymbol.synthesize(using: options)
+        let options = SyntheticSymbolOptions(suffix: suffix)
+        return try SynthesizedSymbol.synthesize(name: name, using: options)
     }
 }
