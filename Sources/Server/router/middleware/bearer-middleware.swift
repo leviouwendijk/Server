@@ -20,6 +20,18 @@ public struct BearerMiddleware: Middleware {
         self.init(symbol: envSymbol, realmName: realmName)
     }
 
+    public init(symbol: String?, realmName: String = "api") throws {
+        guard let symbol else {
+            throw MiddlewareError.failedToInitializeEmptySymbol
+        }
+        self.init(symbol: symbol, realmName: realmName)
+    }
+
+    public init(config: ServerConfig, realmName: String = "api") throws {
+        let symbol = try config.autoSynthesizeTokenSymbol()
+        self.init(symbol: symbol, realmName: realmName)
+    }
+
     internal enum AuthorizationStatus: Sendable, Codable {
         case authorized
         case misconfigured

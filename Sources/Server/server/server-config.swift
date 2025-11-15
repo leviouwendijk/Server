@@ -60,4 +60,9 @@ public struct ServerConfig: Sendable {
     // public func startNotification() -> String {
     //     return "\(name ?? "Application") server running on \(host):\(port)"
     // }
+
+    public func autoSynthesizeTokenSymbol() throws -> String {
+        let options = try SyntheticSymbolOptions(name: name)
+        return SynthesizedSymbol.synthesize(using: options)
+    }
 }
