@@ -66,13 +66,13 @@ public enum CryptographicKeyOperation {
         let rsaOID: [UInt8] = [0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01]
         let nullBytes: [UInt8] = [0x05, 0x00]
 
-        let publicKeyOctet: [UInt8] = [0x04] + derLen(pkcs1.count) + pkcs1
+        let privateKeyOctet: [UInt8] = [0x04] + derLen(pkcs1.count) + pkcs1
         let algSeqContent: [UInt8] = rsaOID + nullBytes
         let algSeq: [UInt8] = [0x30] + derLen(algSeqContent.count) + algSeqContent
         let version: [UInt8] = [0x02, 0x01, 0x00]
 
-        let totalLen = version.count + algSeq.count + publicKeyOctet.count
-        let pki: [UInt8] = [0x30] + derLen(totalLen) + version + algSeq + publicKeyOctet
+        let totalLen = version.count + algSeq.count + privateKeyOctet.count
+        let pki: [UInt8] = [0x30] + derLen(totalLen) + version + algSeq + privateKeyOctet
         return Data(pki)
     }
 
@@ -212,13 +212,13 @@ public enum CryptographicKeyOperation {
         let raw = try Data(contentsOf: URL(fileURLWithPath: path))
         switch detectFlavor(raw) {
         case .encryptedPrivatePEM:
-            throw ProbeError.keyLoadFailed("Encrypted public key detected (BEGIN ENCRYPTED PRIVATE KEY). Convert to unencrypted PKCS#8 first.")
+            throw ProbeError.keyLoadFailed("Encrypted private key detected (BEGIN ENCRYPTED PRIVATE KEY). Convert to unencrypted PKCS#8 first.")
 
         case .pkcs8PrivatePEM:
             let s = String(decoding: raw, as: UTF8.self)
             guard let pkcs8 = pemBody(s, begin: "-----BEGIN PRIVATE KEY-----", end: "-----END PRIVATE KEY-----")
-            else { throw ProbeError.keyLoadFailed("Failed to parse PKCS#8 public PEM.") }
-            print("[crypter] detected public key: PKCS#8 (PEM)")
+            else { throw ProbeError.keyLoadFailed("Failed to parse PKCS#8 private PEM.") }
+            print("[crypter] detected private key: PKCS#8 (PEM)")
             if let pkcs1 = unwrapPKCS8ToPKCS1(pkcs8) {
                 let bits = rsaPrivateKeyModulusBits(pkcs1)
                 return try makeSecKeyFromDER(pkcs1, isPublic: false, sizeBits: bits)
@@ -228,14 +228,14 @@ public enum CryptographicKeyOperation {
         case .pkcs1PrivatePEM:
             let s = String(decoding: raw, as: UTF8.self)
             guard let pkcs1 = pemBody(s, begin: "-----BEGIN RSA PRIVATE KEY-----", end: "-----END RSA PRIVATE KEY-----")
-            else { throw ProbeError.keyLoadFailed("Failed to parse PKCS#1 public PEM.") }
-            print("[crypter] detected public key: PKCS#1 (PEM) → wrapping to PKCS#8")
+            else { throw ProbeError.keyLoadFailed("Failed to parse PKCS#1 private PEM.") }
+            print("[crypter] detected private key: PKCS#1 (PEM) → wrapping to PKCS#8")
             let wrapped = wrapRSAPrivateKeyToPKCS8(pkcs1)
             if let k = try? makeSecKeyFromDER(wrapped, isPublic: false) { return k }
             return try importPrivateKeyWithSecItemImport(wrapped)
 
         case .derUnknown:
-            print("[crypter] detected public key: DER (PKCS#8 or PKCS#1)")
+            print("[crypter] detected private key: DER (PKCS#8 or PKCS#1)")
             if let pkcs1 = unwrapPKCS8ToPKCS1(raw) {
                 let bits = rsaPrivateKeyModulusBits(pkcs1)
                 return try makeSecKeyFromDER(pkcs1, isPublic: false, sizeBits: bits)
@@ -246,7 +246,7 @@ public enum CryptographicKeyOperation {
             return try makeSecKeyFromDER(raw, isPublic: false)
 
         default:
-            throw ProbeError.keyLoadFailed("Not a public key file.")
+            throw ProbeError.keyLoadFailed("Not a private key file.")
         }
     }
 
@@ -264,9 +264,9 @@ public enum CryptographicKeyOperation {
         return out as Data
     }
 
-    public static func rsaDecryptOAEP_SHA256(publicKey: SecKey, data: Data) throws -> Data {
+    public static func rsaDecryptOAEP_SHA256(privateKey: SecKey, data: Data) throws -> Data {
         var err: Unmanaged<CFError>?
-        guard let out = SecKeyCreateDecryptedData(publicKey, .rsaEncryptionOAEPSHA256, data as CFData, &err) else {
+        guard let out = SecKeyCreateDecryptedData(privateKey, .rsaEncryptionOAEPSHA256, data as CFData, &err) else {
             if let e = err?.takeRetainedValue() {
                 throw ProbeError.keyLoadFailed("RSA-OAEP decrypt failed: \(e)")
             }
