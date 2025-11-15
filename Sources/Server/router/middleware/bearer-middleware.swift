@@ -10,13 +10,16 @@ public struct BearerMiddleware: Middleware {
         self.expectedKey = rawKey
         self.realmName = realmName
     }
-    
-    // public init(envSymbol: String, realmName: String = "api") throws {
-    public init(envSymbol: String, realmName: String = "api") {
-        self.expectedKey = try? EnvironmentExtractor.value(.symbol(envSymbol))
+
+    public init(symbol: String, realmName: String = "api") {
+        self.expectedKey = try? EnvironmentExtractor.value(.symbol(symbol))
         self.realmName = realmName
     }
     
+    public init(envSymbol: String, realmName: String = "api") {
+        self.init(symbol: envSymbol, realmName: realmName)
+    }
+
     internal enum AuthorizationStatus: Sendable, Codable {
         case authorized
         case misconfigured
