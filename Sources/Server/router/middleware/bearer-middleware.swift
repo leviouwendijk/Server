@@ -27,6 +27,13 @@ public struct BearerMiddleware: Middleware {
         self.init(symbol: symbol, realmName: realmName)
     }
 
+    /// Tries to auto-synthesize from the 'APP_NAME' environment variable
+    /// Appends the provided suffix, and by default uppercases it
+    /// Example:
+    /// - APP_NAME="Stat" (taken from 'config: ServerConfig', which is String?)
+    /// - suffix: .api_key
+    /// Returns: "STAT_API_KEY"
+    /// Then runs the initializer for environment symbol
     public init(config: ServerConfig, realmName: String = "api", suffix: SynthesizedSymbol = .api_key) throws {
         let symbol = try config.autoSynthesizeTokenSymbol(suffix: suffix)
         self.init(symbol: symbol, realmName: realmName)

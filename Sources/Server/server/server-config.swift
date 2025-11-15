@@ -1,10 +1,6 @@
 import Foundation
 import plate
 
-// public enum LogLevel: String, Sendable {
-//     case debug, info, warn, error
-// }
-
 public struct ServerConfig: Sendable {
     public let name: String?
     public let port: UInt16
@@ -56,10 +52,6 @@ public struct ServerConfig: Sendable {
     public static func externallyManagedProcess(maxConnections: Int? = nil) -> Self {
         return self.init(maxConnections: maxConnections)
     }
-
-    // public func startNotification() -> String {
-    //     return "\(name ?? "Application") server running on \(host):\(port)"
-    // }
 
     public func autoSynthesizeTokenSymbol(suffix: SynthesizedSymbol = .api_key) throws -> String {
         let options = try SyntheticSymbolOptions(name: name, suffix: suffix)
