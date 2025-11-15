@@ -1,43 +1,86 @@
 import Foundation
 
-// POST Overloads (Variadic)
+// ----------------------------------
+// "/" defaults
+// ----------------------------------
+
+// request + router
 public func post(
     handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
 ) -> Route {
-    Route(method: .post, path: "/", handler: handler)
+    Route(
+        method: .post,
+        path: route_default_root,
+        handler: handler
+    )
 }
 
+// request
+public func post(
+    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .post,
+        path: route_default_root,
+        handler: { request, _ in 
+            await handler(request) 
+        }
+    )
+}
+
+// parameterless
+public func post(
+    handler: @Sendable @escaping () async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .post,
+        path: route_default_root,
+        handler: { request, _ in 
+            await handler() 
+        }
+    )
+}
+
+// ----------------------------------
+// joined variadic path components
+// ----------------------------------
+
+// request + router
 public func post(
     _ components: String...,
     handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
 ) -> Route {
-    Route(method: .post, path: joinPath(components), handler: handler)
+    Route(
+        method: .post,
+        path: joinPath(components),
+        handler: handler
+    )
 }
 
-// Parameterless overloads
-public func post(
-    handler: @Sendable @escaping () async -> HTTPResponse
-) -> Route {
-    Route(method: .post, path: "/") { _, _ in await handler() }
-}
-
-public func post(
-    _ components: String...,
-    handler: @Sendable @escaping () async -> HTTPResponse
-) -> Route {
-    Route(method: .post, path: joinPath(components)) { _, _ in await handler() }
-}
-
-// Request-only overloads
+// request
 public func post(
     _ components: String...,
     handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 ) -> Route {
-    Route(method: .post, path: joinPath(components)) { request, _ in await handler(request) }
+    Route(
+        method: .post,
+        path: joinPath(components),
+        handler: { request, _ in 
+            await handler(request) 
+        }
+    )
 }
 
+// parameterless
 public func post(
-    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+    _ components: String...,
+    handler: @Sendable @escaping () async -> HTTPResponse
 ) -> Route {
-    Route(method: .post, path: "/") { request, _ in await handler(request) }
+    Route(
+        method: .post,
+        path: joinPath(components),
+        handler: { request, _ in 
+            await handler() 
+        }
+    )
 }

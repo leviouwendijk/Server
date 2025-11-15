@@ -1,25 +1,86 @@
 import Foundation
 
-// PUT Overloads (Variadic)
+// ----------------------------------
+// "/" defaults
+// ----------------------------------
+
+// request + router
+public func put(
+    handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .put,
+        path: route_default_root,
+        handler: handler
+    )
+}
+
+// request
+public func put(
+    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .put,
+        path: route_default_root,
+        handler: { request, _ in 
+            await handler(request) 
+        }
+    )
+}
+
+// parameterless
+public func put(
+    handler: @Sendable @escaping () async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .put,
+        path: route_default_root,
+        handler: { request, _ in 
+            await handler() 
+        }
+    )
+}
+
+// ----------------------------------
+// joined variadic path components
+// ----------------------------------
+
+// request + router
 public func put(
     _ components: String...,
     handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
 ) -> Route {
-    Route(method: .put, path: joinPath(components), handler: handler)
+    Route(
+        method: .put,
+        path: joinPath(components),
+        handler: handler
+    )
 }
 
-// Parameterless overloads
-public func put(
-    _ components: String...,
-    handler: @Sendable @escaping () async -> HTTPResponse
-) -> Route {
-    Route(method: .put, path: joinPath(components)) { _, _ in await handler() }
-}
-
-// Request-only overloads
+// request
 public func put(
     _ components: String...,
     handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 ) -> Route {
-    Route(method: .put, path: joinPath(components)) { request, _ in await handler(request) }
+    Route(
+        method: .put,
+        path: joinPath(components),
+        handler: { request, _ in 
+            await handler(request) 
+        }
+    )
+}
+
+// parameterless
+public func put(
+    _ components: String...,
+    handler: @Sendable @escaping () async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .put,
+        path: joinPath(components),
+        handler: { request, _ in 
+            await handler() 
+        }
+    )
 }

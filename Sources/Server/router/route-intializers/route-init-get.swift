@@ -1,38 +1,86 @@
 import Foundation
 
-// GET Overloads (Variadic)
+// ----------------------------------
+// "/" defaults
+// ----------------------------------
+
+// request + router
 public func get(
     handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
 ) -> Route {
-    Route(method: .get, path: "/", handler: handler)
+    Route(
+        method: .get,
+        path: route_default_root,
+        handler: handler
+    )
 }
 
+// request
+public func get(
+    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .get,
+        path: route_default_root,
+        handler: { request, _ in 
+            await handler(request) 
+        }
+    )
+}
+
+// parameterless
+public func get(
+    handler: @Sendable @escaping () async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .get,
+        path: route_default_root,
+        handler: { request, _ in 
+            await handler() 
+        }
+    )
+}
+
+// ----------------------------------
+// joined variadic path components
+// ----------------------------------
+
+// request + router
 public func get(
     _ components: String...,
     handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
 ) -> Route {
-    Route(method: .get, path: joinPath(components), handler: handler)
+    Route(
+        method: .get,
+        path: joinPath(components),
+        handler: handler
+    )
 }
 
-// Parameterless overloads
-public func get(
-    handler: @Sendable @escaping () async -> HTTPResponse
-) -> Route {
-    Route(method: .get, path: "/") { _, _ in await handler() }
-}
-
-public func get(
-    _ components: String...,
-    handler: @Sendable @escaping () async -> HTTPResponse
-) -> Route {
-    Route(method: .get, path: joinPath(components)) { _, _ in await handler() }
-}
-
-// Request-only overloads
+// request
 public func get(
     _ components: String...,
     handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 ) -> Route {
-    Route(method: .get, path: joinPath(components)) { request, _ in await handler(request) }
+    Route(
+        method: .get,
+        path: joinPath(components),
+        handler: { request, _ in 
+            await handler(request) 
+        }
+    )
 }
 
+// parameterless
+public func get(
+    _ components: String...,
+    handler: @Sendable @escaping () async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .get,
+        path: joinPath(components),
+        handler: { request, _ in 
+            await handler() 
+        }
+    )
+}
