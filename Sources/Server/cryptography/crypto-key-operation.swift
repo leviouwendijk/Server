@@ -307,13 +307,60 @@ extension CryptographicKeyOperation {
     public static func loadKey(_ type: CryptographicKeyType, at path: String) throws -> SecKey {
         switch type {
         case .public:
-            try loadPublicKey(at: path)
+            return try loadPublicKey(at: path)
         case .private:
-            try loadPrivateKey(at: path)
+            return try loadPrivateKey(at: path)
         }
     }
 
     public static func load(_ type: CryptographicKeyType, at path: String) throws -> SecKey {
         return try loadKey(type, at: path)
+    }
+
+    /// convenience overload that uses a plain app name 'MY_APP'
+    /// to resolve into 'MY_APP_PUBLIC_KEY_PATH' automatically
+    /// then resolve its path from EnvironmentExtractor
+    /// then load it
+    public static func loadKey(
+        name: String,
+        _ type: CryptographicKeyType,
+        replacer: EnvironmentReplacer = .init(
+            replacements: [
+                .variable(key: "$HOME", replacement: .home)
+            ]
+        )
+    ) throws -> SecKey {
+        switch type {
+        case .public:
+            let path = try EnvironmentExtractor.value(
+                name: name,
+                suffix: .public_key_path,
+                replacer: replacer
+            )
+            return try loadPublicKey(at: path)
+        case .private:
+            let path = try EnvironmentExtractor.value(
+                name: name,
+                suffix: .private_key_path,
+                replacer: replacer
+            )
+            return try loadPrivateKey(at: path)
+        }
+    }
+
+    public static func load(
+        name: String,
+        _ type: CryptographicKeyType,
+        replacer: EnvironmentReplacer = .init(
+            replacements: [
+                .variable(key: "$HOME", replacement: .home)
+            ]
+        )
+    ) throws -> SecKey {
+        return try loadKey(
+            name: name,
+            type,
+            replacer: replacer
+        )
     }
 }

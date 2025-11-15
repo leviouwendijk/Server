@@ -89,4 +89,38 @@ public struct ServerConfig: Sendable {
         }
         return name
     }
+
+    public func keys() throws -> CryptographicKeyPair {
+        let n = try resolveName()
+        let pub = try CryptographicKeyOperation.loadKey(name: n, .public)
+        let priv = try CryptographicKeyOperation.loadKey(name: n, .private)
+        return .init(
+            publicKey: pub,
+            privateKey: priv
+        )
+    }
 }
+
+// try keys() comes to replace a binary-side state.swift implemenation like:
+//
+// let replacer = EnvironmentReplacer(replacements: [.variable(key: "$HOME", replacement: .home)])
+//
+// internal func keys() throws -> CryptographicKeyPair {
+//     let name = try config.resolveName()
+//
+//     let pubPath = try EnvironmentExtractor.value(
+//         name: name,
+//         suffix: .public_key_path,
+//         replacer: replacer
+//     )
+//     let privPath = try EnvironmentExtractor.value(
+//         name: name,
+//         suffix: .private_key_path,
+//         replacer: replacer
+//     )
+//
+//     let publicKey  = try CryptographicKeyOperation.loadPublicKey(at: pubPath)
+//     let privateKey = try CryptographicKeyOperation.loadPrivateKey(at: privPath)
+//
+//     return CryptographicKeyPair(publicKey: publicKey, privateKey: privateKey)
+// }
