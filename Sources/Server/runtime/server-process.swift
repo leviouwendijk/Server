@@ -1,19 +1,30 @@
 import Foundation
+import plate
 
 public struct ServerProcess: Sendable {
     public let config: ServerConfig
     public let routes: [Route]
     public let router: Router
     public let engine: ServerEngine
+    public let logger: StandardLogger?
 
     public init(
         config: ServerConfig = ServerConfig.externallyManagedProcess(),
-        routes: [Route]
+        routes: [Route],
+
+        statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
+        logger: StandardLogger? = nil
     ) {
         self.config = config
         self.routes = routes
         self.router = Router(routes: routes)
-        self.engine = ServerEngine(config: config, router: router)
+        self.engine = ServerEngine(
+            config: config,
+            router: router,
+            statusRegistry: statusRegistry,
+            logger: logger
+        )
+        self.logger = logger
     }
 
     /// Instance entry point
@@ -29,10 +40,18 @@ public struct ServerProcess: Sendable {
     /// Static entry point
     public static func run(
         config: ServerConfig = ServerConfig.externallyManagedProcess(),
-        routes: [Route]
+        routes: [Route],
+
+        statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
+        logger: StandardLogger? = nil
     ) async {
         let router = Router(routes: routes)
-        let engine = ServerEngine(config: config, router: router)
+        let engine = ServerEngine(
+            config: config,
+            router: router,
+            statusRegistry: statusRegistry,
+            logger: logger
+        )
         
         do {
             try await engine.start()
