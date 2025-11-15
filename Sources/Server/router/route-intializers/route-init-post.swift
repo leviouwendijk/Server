@@ -4,16 +4,16 @@ import Foundation
 // "/" defaults
 // ----------------------------------
 
-// // request + router
-// public func post(
-//     handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
-// ) -> Route {
-//     Route(
-//         method: .post,
-//         path: route_default_root,
-//         handler: handler
-//     )
-// }
+// request + router
+public func post(
+    handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .post,
+        path: route_default_root,
+        handler: handler
+    )
+}
 
 // request
 public func post(
@@ -55,18 +55,18 @@ public func post(
     )
 }
 
-// // request
-// public func post(
-//     _ components: String...,
-//     request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
-// ) -> Route {
-//     Route(
-//         method: .post,
-//         path: joinPath(components),
-//     ) { req, _ in 
-//             await request(req) 
-//     }
-// }
+// request
+public func post(
+    _ components: String...,
+    request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .post,
+        path: joinPath(components),
+    ) { req, _ in 
+            await request(req) 
+    }
+}
 
 // parameterless
 public func post(
