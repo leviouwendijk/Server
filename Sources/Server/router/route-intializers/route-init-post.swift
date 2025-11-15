@@ -27,19 +27,6 @@ public func post(
     }
 }
 
-// request
-public func post(
-    _ components: String...,
-    request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
-) -> Route {
-    Route(
-        method: .post,
-        path: joinPath(components),
-    ) { req, _ in 
-            await request(req) 
-    }
-}
-
 // parameterless
 public func post(
     body: @Sendable @escaping () async -> HTTPResponse
@@ -57,17 +44,29 @@ public func post(
 // ----------------------------------
 
 // request + router
+public func post(
+    _ components: String...,
+    handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .post,
+        path: joinPath(components),
+        handler: handler
+    )
+}
+
+// // request
 // public func post(
 //     _ components: String...,
-//     handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
+//     request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
 // ) -> Route {
 //     Route(
 //         method: .post,
 //         path: joinPath(components),
-//         handler: handler
-//     )
+//     ) { req, _ in 
+//             await request(req) 
+//     }
 // }
-
 
 // parameterless
 public func post(
