@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ServerProcess {
+public struct ServerProcess: Sendable {
     public let config: ServerConfig
     public let routes: [Route]
     public let router: Router
