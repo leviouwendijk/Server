@@ -27,3 +27,17 @@ public func post(
 ) -> Route {
     Route(method: .post, path: joinPath(components)) { _, _ in await handler() }
 }
+
+// Request-only overloads
+public func post(
+    _ components: String...,
+    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+) -> Route {
+    Route(method: .post, path: joinPath(components)) { request, _ in await handler(request) }
+}
+
+public func post(
+    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+) -> Route {
+    Route(method: .post, path: "/") { request, _ in await handler(request) }
+}

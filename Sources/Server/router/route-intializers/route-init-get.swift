@@ -27,3 +27,12 @@ public func get(
 ) -> Route {
     Route(method: .get, path: joinPath(components)) { _, _ in await handler() }
 }
+
+// Request-only overloads
+public func get(
+    _ components: String...,
+    handler: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+) -> Route {
+    Route(method: .get, path: joinPath(components)) { request, _ in await handler(request) }
+}
+
