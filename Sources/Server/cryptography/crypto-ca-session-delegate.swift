@@ -30,21 +30,29 @@ public actor CryptographicCATrustState {
 }
 
 public final class CryptographicCASessionDelegate: NSObject, URLSessionDelegate {
+    public enum PolicyMode: Sendable {
+        case strictServerAuth   // enforce normal TLS server usage
+        case basicX509          // ignore EKU, just validate chain against CA
+    }
+
     private let caCertificate: SecCertificate
     private let allowedHost: String?
     private let anchorOnly: Bool
     private let trustState: CryptographicCATrustState
+    private let policyMode: PolicyMode
 
     public init(
         caCertificate: SecCertificate,
         allowedHost: String? = nil,
         anchorOnly: Bool = true,
-        trustState: CryptographicCATrustState
+        trustState: CryptographicCATrustState,
+        policyMode: PolicyMode = .strictServerAuth
     ) {
         self.caCertificate = caCertificate
         self.allowedHost = allowedHost
         self.anchorOnly = anchorOnly
         self.trustState = trustState
+        self.policyMode = policyMode
     }
 
     public func urlSession(
@@ -71,6 +79,18 @@ public final class CryptographicCASessionDelegate: NSObject, URLSessionDelegate 
             }
         }
 
+        switch policyMode {
+        case .strictServerAuth:
+            // keep system's SSL policy (this enforces EKU serverAuth etc.)
+            break
+
+        case .basicX509:
+            // behave more like OpenSSL/Node: validate chain against CA only
+            let policy = SecPolicyCreateBasicX509()
+            SecTrustSetPolicies(trust, policy)
+        }
+
+        // Pin our CA as anchor
         SecTrustSetAnchorCertificates(trust, [caCertificate] as CFArray)
         SecTrustSetAnchorCertificatesOnly(trust, anchorOnly)
 
@@ -101,6 +121,7 @@ public enum CryptographicCATrustedURLSession {
         caCertificate: SecCertificate,
         allowedHost: String? = nil,
         anchorOnly: Bool = true,
+        policyMode: CryptographicCASessionDelegate.PolicyMode = .strictServerAuth,
         configuration: URLSessionConfiguration = .ephemeral
     ) -> (URLSession, CryptographicCATrustState) {
         let state = CryptographicCATrustState()
@@ -108,7 +129,8 @@ public enum CryptographicCATrustedURLSession {
             caCertificate: caCertificate,
             allowedHost: allowedHost,
             anchorOnly: anchorOnly,
-            trustState: state
+            trustState: state,
+            policyMode: policyMode
         )
         let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
         return (session, state)
@@ -118,6 +140,7 @@ public enum CryptographicCATrustedURLSession {
         caCertificatePathSymbol: String,
         allowedHost: String? = nil,
         anchorOnly: Bool = true,
+        policyMode: CryptographicCASessionDelegate.PolicyMode = .strictServerAuth,
         configuration: URLSessionConfiguration = .ephemeral
     ) throws -> (URLSession, CryptographicCATrustState) {
         let caPath = try EnvironmentExtractor.value(.symbol(caCertificatePathSymbol))
@@ -126,6 +149,7 @@ public enum CryptographicCATrustedURLSession {
             caCertificate: caCert,
             allowedHost: allowedHost,
             anchorOnly: anchorOnly,
+            policyMode: policyMode,
             configuration: configuration
         )
     }
@@ -136,12 +160,14 @@ public enum CryptographicCATrustedURLSession {
         caCertificatePathSymbol: String,
         allowedHost: String? = nil,
         anchorOnly: Bool = true,
+        policyMode: CryptographicCASessionDelegate.PolicyMode = .strictServerAuth,
         configuration: URLSessionConfiguration = .ephemeral
     ) async throws -> (Data, URLResponse) {
         let (session, state) = try create(
             caCertificatePathSymbol: caCertificatePathSymbol,
             allowedHost: allowedHost,
             anchorOnly: anchorOnly,
+            policyMode: policyMode,
             configuration: configuration
         )
 
