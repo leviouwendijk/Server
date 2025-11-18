@@ -15,7 +15,7 @@ public struct ServerProcess: Sendable {
         statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
         logger: StandardLogger? = nil,
 
-        activityCallback: HTTPActivityCallback? = nil
+        activity: HTTPActivityCallback? = nil
     ) {
         self.config = config
         self.routes = routes
@@ -25,7 +25,7 @@ public struct ServerProcess: Sendable {
             router: router,
             statusRegistry: statusRegistry,
             logger: logger,
-            activityCallback: activityCallback
+            activityCallback: activity
         )
         self.logger = logger
     }
@@ -48,7 +48,7 @@ public struct ServerProcess: Sendable {
         statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
         logger: StandardLogger? = nil,
 
-        activityCallback: HTTPActivityCallback? = nil
+        activity: HTTPActivityCallback? = nil
     ) async {
         let router = Router(routes: routes)
         let engine = ServerEngine(
@@ -56,7 +56,7 @@ public struct ServerProcess: Sendable {
             router: router,
             statusRegistry: statusRegistry,
             logger: logger,
-            activityCallback: activityCallback
+            activityCallback: activity
         )
         
         do {
