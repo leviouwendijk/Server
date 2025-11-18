@@ -20,4 +20,13 @@ public struct GroupWithMiddleware: Sendable {
         guard let middleware else { throw RouteError.invalidMiddleware } 
         return self.use(middleware)
     }
+
+    /// Synthetic ride-along routes
+    public func allow(_ methods: [HTTPMethod]) -> [Route] {
+        routes.map { $0.allow(methods) }
+    }
+
+    public func allow(_ methods: HTTPMethod...) -> [Route] {
+        allow(methods)
+    }
 }

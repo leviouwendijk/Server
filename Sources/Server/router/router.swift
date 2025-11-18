@@ -54,34 +54,66 @@ public struct Router: Sendable {
     // }
 
     public func route(_ request: HTTPRequest) async -> HTTPResponse {
-        // Try exact method + path
-        if let route = routes.first(where: { $0.method == request.method && $0.path == request.path }) {
+        // Exact method + path
+        if let route = exactRoute(for: request) {
             return await run(route: route, for: request)
         }
-
-        // Special case: OPTIONS should "ride" any existing path and let middleware handle it
-        if request.method == .options {
-            if let route = routes.first(where: { $0.path == request.path }) {
-                // Reuse that route's middleware chain (CORS, auth, rate-limit, etc.)
-                return await run(route: route, for: request)
-            }
-
-            // No route for this path at all -> 404 is fine for OPTIONS too
-            return .notFound(body: "No route for \(request.method.rawValue) \(request.path)")
+        
+        // Synthetic OPTIONS riding another route (if allowed)
+        if request.method == .options, let route = syntheticOptionsRoute(for: request) {
+            return await run(route: route, for: request)
         }
-
-        // Non-OPTIONS: preserve existing 405/404 behavior
+        
+        // Synthetic HEAD riding GET (if allowed)
+        if request.method == .head, let route = syntheticHeadRoute(for: request) {
+            var resp = await run(route: route, for: request)
+            resp.body = ""
+            return resp
+        }
+        
+        // Fallback: 405 vs 404
+        return defaultResponse(for: request)
+    }
+    
+    /// Exact method + path match.
+    private func exactRoute(for request: HTTPRequest) -> Route? {
+        routes.first { $0.method == request.method && $0.path == request.path }
+    }
+    
+    /// OPTIONS may ride any route on the same path that explicitly allows it.
+    private func syntheticOptionsRoute(for request: HTTPRequest) -> Route? {
+        routes.first {
+            $0.path == request.path &&
+            $0.syntheticMethods.contains(.options)
+        }
+    }
+    
+    /// HEAD may ride a GET route on the same path that explicitly allows it.
+    private func syntheticHeadRoute(for request: HTTPRequest) -> Route? {
+        routes.first {
+            $0.method == .get &&
+            $0.path == request.path &&
+            $0.syntheticMethods.contains(.head)
+        }
+    }
+    
+    /// Shared 405 / 404 logic.
+    private func defaultResponse(for request: HTTPRequest) -> HTTPResponse {
         let hasPath = routes.contains { $0.path == request.path }
         if hasPath {
-            return .methodNotAllowed(body: "Method \(request.method.rawValue) not allowed for \(request.path)")
+            return .methodNotAllowed(
+                body: "Method \(request.method.rawValue) not allowed for \(request.path)"
+            )
+        } else {
+            return .notFound(
+                body: "No route for \(request.method.rawValue) \(request.path)"
+            )
         }
-
-        return .notFound(body: "No route for \(request.method.rawValue) \(request.path)")
     }
-
-    // factor out the middleware chain so we don't duplicate it
+    
     private func run(route: Route, for request: HTTPRequest) async -> HTTPResponse {
         var handler: @Sendable (HTTPRequest, Router) async -> HTTPResponse = route.handler
+        
         for middleware in route.middleware.reversed() {
             let next = handler
             let mw = middleware
@@ -89,6 +121,7 @@ public struct Router: Sendable {
                 await mw.handle(req, router, next: next)
             }
         }
+        
         return await handler(request, self)
     }
     

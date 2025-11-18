@@ -30,6 +30,10 @@ public struct Route: Sendable {
     public let path: String
     public let handler: @Sendable (HTTPRequest, Router) async -> HTTPResponse
     public var middleware: [Middleware] = []
+
+    /// Extra methods that are allowed to "ride" this route
+    /// (e.g. OPTIONS riding POST, HEAD riding GET).
+    public var syntheticMethods: Set<HTTPMethod> = []
     
     public init(
         method: HTTPMethod,
@@ -61,5 +65,25 @@ public struct Route: Sendable {
     public func use(_ middleware: [Middleware]?) throws -> Route {
         guard let middleware else { throw RouteError.invalidMiddleware } 
         return self.use(middleware)
+    }
+
+    public func allow(_ methods: [HTTPMethod]) -> Route {
+        var copy = self
+        copy.syntheticMethods.formUnion(methods)
+        return copy
+    }
+
+    public func allow(_ methods: HTTPMethod...) -> Route {
+        allow(methods)
+    }
+}
+
+extension Array where Element == Route {
+    public func allow(_ methods: [HTTPMethod]) -> [Route] {
+        map { $0.allow(methods) }
+    }
+
+    public func allow(_ methods: HTTPMethod...) -> [Route] {
+        allow(methods)
     }
 }
