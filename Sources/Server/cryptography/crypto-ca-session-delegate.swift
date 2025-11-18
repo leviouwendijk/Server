@@ -1,16 +1,20 @@
 import Foundation
 import Security
+import plate
 
 public final class CryptographicCASessionDelegate: NSObject, URLSessionDelegate {
     private let caCertificate: SecCertificate
     private let allowedHost: String?
+    private let anchorOnly: Bool
 
     public init(
         caCertificate: SecCertificate,
-        allowedHost: String? = nil
+        allowedHost: String? = nil,
+        anchorOnly: Bool = true
     ) {
         self.caCertificate = caCertificate
         self.allowedHost = allowedHost
+        self.anchorOnly = anchorOnly
     }
 
     public func urlSession(
@@ -32,9 +36,9 @@ public final class CryptographicCASessionDelegate: NSObject, URLSessionDelegate 
             }
         }
 
-        // Pin our CA as the only anchor
+        // Pin our CA as an anchor certificate
         SecTrustSetAnchorCertificates(trust, [caCertificate] as CFArray)
-        SecTrustSetAnchorCertificatesOnly(trust, true)
+        SecTrustSetAnchorCertificatesOnly(trust, anchorOnly)
 
         var error: CFError?
         let ok = SecTrustEvaluateWithError(trust, &error)
@@ -45,5 +49,37 @@ public final class CryptographicCASessionDelegate: NSObject, URLSessionDelegate 
         } else {
             completionHandler(.cancelAuthenticationChallenge, nil)
         }
+    }
+}
+
+public enum CryptographicTrustedURLSession {
+    public static func create(
+        caCertificate: SecCertificate,
+        allowedHost: String? = nil,
+        anchorOnly: Bool = true,
+        configuration: URLSessionConfiguration = .ephemeral
+    ) -> URLSession {
+        let delegate = CryptographicCASessionDelegate(
+            caCertificate: caCertificate,
+            allowedHost: allowedHost,
+            anchorOnly: anchorOnly
+        )
+        return URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+    }
+
+    public static func create(
+        caCertificatePathSymbol: String,
+        allowedHost: String? = nil,
+        anchorOnly: Bool = true,
+        configuration: URLSessionConfiguration = .ephemeral
+    ) throws -> URLSession {
+        let caPath = try EnvironmentExtractor.value(.symbol(caCertificatePathSymbol))
+        let caCert = try CryptographicTLSCertificateLoader.loadCertificate(at: caPath)
+        let delegate = CryptographicCASessionDelegate(
+            caCertificate: caCert,
+            allowedHost: allowedHost,
+            anchorOnly: anchorOnly
+        )
+        return URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
     }
 }
