@@ -9,17 +9,20 @@ public actor ServerEngine: Sendable {
     private var listener: NWListener?
     private var clients: [ServerConnectionHandler] = []
     private let logger: StandardLogger?
+    private let activityCallback: HTTPActivityCallback?
     
     public init(
         config: ServerConfig,
         router: Router,
         statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
-        logger: StandardLogger? = nil
+        logger: StandardLogger? = nil,
+        activityCallback: HTTPActivityCallback? = nil
     ) {
         self.config = config
         self.router = router
         self.statusRegistry = statusRegistry
         self.logger = logger ?? (try? StandardLogger(name: config.name))
+        self.activityCallback = activityCallback
     }
     
     public func start() async throws {
@@ -61,7 +64,8 @@ public actor ServerEngine: Sendable {
             connection: connection,
             router: router,
             config: config,
-            statusRegistry: statusRegistry
+            statusRegistry: statusRegistry,
+            activityCallback: activityCallback
         )
         clients.append(handler)
     }

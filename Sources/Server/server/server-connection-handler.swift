@@ -8,20 +8,22 @@ final class ServerConnectionHandler: @unchecked Sendable {
     private let config: ServerConfig
     private let statusRegistry: HTTPStatusRegistry
     private var buffer = Data()
+    private let activityCallback: HTTPActivityCallback?
     
     init(
         connection: NWConnection,
         router: Router,
         config: ServerConfig,
-        statusRegistry: HTTPStatusRegistry
+        statusRegistry: HTTPStatusRegistry,
+        activityCallback: HTTPActivityCallback? = nil
     ) {
         self.connection = connection
         self.router = router
         self.config = config
         self.statusRegistry = statusRegistry
+        self.activityCallback = activityCallback
 
         connection.start(queue: DispatchQueue(label: "server.connection.\(UUID().uuidString)"))
-
         startReceiveLoop()
     }
     
@@ -101,8 +103,29 @@ final class ServerConnectionHandler: @unchecked Sendable {
             do {
                 let request = try HTTPRequestParser.parse(text)
 
-                Task { [request] in
-                    let response = await router.route(request)
+                let endpointDescription = String(describing: connection.endpoint)
+                let callback = self.activityCallback
+
+                // Task { [request] in
+                //     let response = await router.route(request)
+                //     self.sendHTTPResponse(response)
+                // }
+                // return
+                Task { [request, endpointDescription, callback, weak self] in
+                    guard let self else { return }
+                    let response = await self.router.route(request)
+
+                    if let cb = callback {
+                        let event = HTTPActivityEvent(
+                            timestamp: Date(),
+                            method: request.method,
+                            path: request.path,
+                            status: response.status,
+                            clientDescription: endpointDescription
+                        )
+                        cb(event)
+                    }
+
                     self.sendHTTPResponse(response)
                 }
                 return

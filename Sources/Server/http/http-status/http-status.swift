@@ -96,6 +96,10 @@ public struct HTTPStatus: Hashable, Sendable, Equatable {
     public static func resolve(code: Int) -> HTTPStatus {
         defaultFor(code: code)
     }
+
+    public var family: HTTPStatusFamily {
+        return .init(from: self)
+    }
 }
 
 extension HTTPStatus: Codable {
