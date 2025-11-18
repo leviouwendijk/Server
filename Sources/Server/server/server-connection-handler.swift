@@ -99,7 +99,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
         log("handleText called with \(text.count) bytes", level: .debug)
         log("Request text: \(text.prefix(100))", level: .debug)
 
-        if text.hasPrefix("GET ") || text.hasPrefix("POST ") {
+        // if text.hasPrefix("GET ") || text.hasPrefix("POST ") {
             do {
                 let request = try HTTPRequestParser.parse(text)
 
@@ -142,10 +142,10 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 sendHTTPResponse(errorResp)
                 return
             }
-        }
+        // }
 
-        let ack = "server-ack: received \(text.count) bytes"
-        sendPlain(ack)
+        // let ack = "server-ack: received \(text.count) bytes"
+        // sendPlain(ack)
     }
 
     private func sendHTTPResponse(_ response: HTTPResponse) {
