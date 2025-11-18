@@ -2,19 +2,49 @@ import Foundation
 import Security
 import plate
 
+public enum CryptographicCATrustError: Error, LocalizedError {
+    case trustEvaluationFailed(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .trustEvaluationFailed(let msg):
+            return "TLS trust evaluation failed: \(msg)"
+        }
+    }
+}
+
+public actor CryptographicCATrustState {
+    private var lastError: CryptographicCATrustError?
+
+    public init() {}
+
+    public func set(_ error: CryptographicCATrustError?) {
+        lastError = error
+    }
+
+    public func take() -> CryptographicCATrustError? {
+        let e = lastError
+        lastError = nil
+        return e
+    }
+}
+
 public final class CryptographicCASessionDelegate: NSObject, URLSessionDelegate {
     private let caCertificate: SecCertificate
     private let allowedHost: String?
     private let anchorOnly: Bool
+    private let trustState: CryptographicCATrustState
 
     public init(
         caCertificate: SecCertificate,
         allowedHost: String? = nil,
-        anchorOnly: Bool = true
+        anchorOnly: Bool = true,
+        trustState: CryptographicCATrustState
     ) {
         self.caCertificate = caCertificate
         self.allowedHost = allowedHost
         self.anchorOnly = anchorOnly
+        self.trustState = trustState
     }
 
     public func urlSession(
@@ -23,7 +53,8 @@ public final class CryptographicCASessionDelegate: NSObject, URLSessionDelegate 
         completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
     ) {
         guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-              let trust = challenge.protectionSpace.serverTrust else {
+              let trust = challenge.protectionSpace.serverTrust
+        else {
             completionHandler(.performDefaultHandling, nil)
             return
         }
@@ -31,22 +62,35 @@ public final class CryptographicCASessionDelegate: NSObject, URLSessionDelegate 
         if let allowedHost {
             let host = challenge.protectionSpace.host
             guard host == allowedHost else {
+                let err = CryptographicCATrustError.trustEvaluationFailed(
+                    "Host mismatch. Expected \(allowedHost), got \(host)"
+                )
+                Task { await trustState.set(err) }
                 completionHandler(.cancelAuthenticationChallenge, nil)
                 return
             }
         }
 
-        // Pin our CA as an anchor certificate
         SecTrustSetAnchorCertificates(trust, [caCertificate] as CFArray)
         SecTrustSetAnchorCertificatesOnly(trust, anchorOnly)
 
-        var error: CFError?
-        let ok = SecTrustEvaluateWithError(trust, &error)
+        var cfError: CFError?
+        let ok = SecTrustEvaluateWithError(trust, &cfError)
 
         if ok {
+            Task { await trustState.set(nil) }
             let credential = URLCredential(trust: trust)
             completionHandler(.useCredential, credential)
         } else {
+            let description: String
+            if let cfError {
+                description = CFErrorCopyDescription(cfError) as String
+            } else {
+                description = "Unknown trust error"
+            }
+
+            let err = CryptographicCATrustError.trustEvaluationFailed(description)
+            Task { await trustState.set(err) }
             completionHandler(.cancelAuthenticationChallenge, nil)
         }
     }
@@ -58,13 +102,16 @@ public enum CryptographicCATrustedURLSession {
         allowedHost: String? = nil,
         anchorOnly: Bool = true,
         configuration: URLSessionConfiguration = .ephemeral
-    ) -> URLSession {
+    ) -> (URLSession, CryptographicCATrustState) {
+        let state = CryptographicCATrustState()
         let delegate = CryptographicCASessionDelegate(
             caCertificate: caCertificate,
             allowedHost: allowedHost,
-            anchorOnly: anchorOnly
+            anchorOnly: anchorOnly,
+            trustState: state
         )
-        return URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+        let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+        return (session, state)
     }
 
     public static func create(
@@ -72,14 +119,39 @@ public enum CryptographicCATrustedURLSession {
         allowedHost: String? = nil,
         anchorOnly: Bool = true,
         configuration: URLSessionConfiguration = .ephemeral
-    ) throws -> URLSession {
+    ) throws -> (URLSession, CryptographicCATrustState) {
         let caPath = try EnvironmentExtractor.value(.symbol(caCertificatePathSymbol))
         let caCert = try CryptographicTLSCertificateLoader.loadCertificate(at: caPath)
-        let delegate = CryptographicCASessionDelegate(
+        return create(
             caCertificate: caCert,
             allowedHost: allowedHost,
-            anchorOnly: anchorOnly
+            anchorOnly: anchorOnly,
+            configuration: configuration
         )
-        return URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+    }
+
+    /// Convenience: run a request and surface TLS trust errors instead of bare `.cancelled`.
+    public static func data(
+        for request: URLRequest,
+        caCertificatePathSymbol: String,
+        allowedHost: String? = nil,
+        anchorOnly: Bool = true,
+        configuration: URLSessionConfiguration = .ephemeral
+    ) async throws -> (Data, URLResponse) {
+        let (session, state) = try create(
+            caCertificatePathSymbol: caCertificatePathSymbol,
+            allowedHost: allowedHost,
+            anchorOnly: anchorOnly,
+            configuration: configuration
+        )
+
+        do {
+            return try await session.data(for: request)
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            if let trustError = await state.take() {
+                throw trustError
+            }
+            throw urlError
+        }
     }
 }
