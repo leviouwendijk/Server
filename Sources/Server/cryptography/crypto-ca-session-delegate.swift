@@ -52,7 +52,7 @@ public final class CryptographicCASessionDelegate: NSObject, URLSessionDelegate 
     }
 }
 
-public enum CryptographicTrustedURLSession {
+public enum CryptographicCATrustedURLSession {
     public static func create(
         caCertificate: SecCertificate,
         allowedHost: String? = nil,
