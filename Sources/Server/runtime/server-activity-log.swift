@@ -18,7 +18,7 @@ public enum ServerActivityLog {
 
         return { event in
             let code = event.status.code
-            let family = HTTPStatusFamily(code: code)
+            let family = event.status.family
 
             let shouldLog: Bool = {
                 switch selection {
@@ -71,19 +71,16 @@ extension ServerActivityLog {
         let table = tmp
 
         return { event in
-            let code = event.status.code
-            let family = HTTPStatusFamily(code: code)
-
-            guard let logger = table[family] else {
+            guard let logger = table[event.status.family] else {
                 return
             }
 
-            let lineBase = "\(event.method.rawValue) \(event.path) -> \(code)"
+            let lineBase = "\(event.method.rawValue) \(event.path) -> \(event.status.code)"
             let line: String
             if let client = event.clientDescription {
-                line = "[\(client)] \(lineBase)"
+                line = "[\(event.serviceName)] [\(client)] \(lineBase)"
             } else {
-                line = lineBase
+                line = "[\(event.serviceName)] \(lineBase)"
             }
 
         // case informational   // 1xx
@@ -93,7 +90,7 @@ extension ServerActivityLog {
         // case serverError     // 5xx
         // case other           // everything else / weird
 
-            switch family {
+            switch event.status.family {
             case .serverError:
                 logger.error(line)
             case .clientError, .other:

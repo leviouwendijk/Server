@@ -103,7 +103,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
             do {
                 let request = try HTTPRequestParser.parse(text)
 
-                let endpointDescription = String(describing: connection.endpoint)
+                // let endpointDescription = String(describing: connection.endpoint)
                 let callback = self.activityCallback
 
                 // Task { [request] in
@@ -111,17 +111,23 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 //     self.sendHTTPResponse(response)
                 // }
                 // return
-                Task { [request, endpointDescription, callback, weak self] in
+                Task { [request, callback, weak self] in
                     guard let self else { return }
+                    let startedAt = Date()
                     let response = await self.router.route(request)
+                    let finishedAt = Date()
 
                     if let cb = callback {
                         let event = HTTPActivityEvent(
-                            timestamp: Date(),
+                            serviceName: config.name,
+                            timestamp: finishedAt,
                             method: request.method,
                             path: request.path,
                             status: response.status,
-                            clientDescription: endpointDescription
+                            clientDescription: String(describing: connection.endpoint),
+                            requestId: request.header("X-Request-Id"),
+                            userAgent: request.header("User-Agent"),
+                            duration: finishedAt.timeIntervalSince(startedAt)
                         )
                         cb(event)
                     }
