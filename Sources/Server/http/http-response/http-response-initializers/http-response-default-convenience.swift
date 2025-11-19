@@ -51,6 +51,13 @@ public extension HTTPResponse {
         h["WWW-Authenticate"] = "Bearer error=\(bearerError.escape())"
         return HTTPResponse(status: .unauthorized, headers: h, body: body)
     }
+
+    static func tooManyRequests(
+        body: String = "Too Many Requests",
+        headers: [String: String] = [:]
+    ) -> HTTPResponse {
+        HTTPResponse(status: .tooManyRequests, headers: headers, body: body)
+    }
     
     /// Create a 403 Forbidden response
     static func forbidden(body: String = "Forbidden", headers: [String: String] = [:]) -> HTTPResponse {
