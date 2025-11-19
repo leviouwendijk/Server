@@ -11,6 +11,10 @@ public struct GroupWithMiddleware: Sendable {
         routes.map { $0.use(middleware) }
     }
 
+    public func use(_ middleware: Middleware...) -> [Route] {
+        return self.use(middleware)
+    }
+
     public func use(_ m: Middleware?) throws -> [Route] {
         guard let m else { throw RouteError.invalidMiddleware } 
         return self.use(m)

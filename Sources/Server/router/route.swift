@@ -57,6 +57,10 @@ public struct Route: Sendable {
         return copy
     }
 
+    public func use(_ middleware: Middleware...) -> Route {
+        return self.use(middleware)
+    }
+
     public func use(_ m: Middleware?) throws -> Route {
         guard let m else { throw RouteError.invalidMiddleware } 
         return self.use(m)
@@ -79,12 +83,22 @@ public struct Route: Sendable {
 }
 
 extension Array where Element == Route {
+    // WARNNING: activation creates ambiguity between
+    // [Route] .use extension and group().use extension.
+    // The compiler will not be able to distinguish these then.
+    // Fix #1: add variadic overload to allow conv.?
+    // Fix #2: use 1 return type from group() to build routes from, not two
+    //
     public func use(_ m: Middleware) -> [Route] {
         map { $0.use(m) }
     }
 
     public func use(_ middleware: [Middleware]) -> [Route] {
         map { $0.use(middleware) }
+    }
+
+    public func use(_ middleware: Middleware...) -> [Route] {
+        return use(middleware)
     }
 
     public func use(_ m: Middleware?) throws -> [Route] {

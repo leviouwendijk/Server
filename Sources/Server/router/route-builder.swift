@@ -29,4 +29,8 @@ public enum RouteBuilder: Sendable {
     public static func buildExpression(_ route: Route) -> [Route] {
         [route]
     }
+
+    public static func buildExpression(_ group: GroupWithMiddleware) -> [Route] {
+        group.routes
+    }
 }
