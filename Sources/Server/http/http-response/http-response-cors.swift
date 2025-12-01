@@ -1,10 +1,12 @@
 import Foundation
+import Parsers
 
 public struct CORSConfig: Sendable {
     public enum AllowedOrigin: Sendable {
         case any                      // "*", but adjusted when allowCredentials = true
         case only(String)             // exact single origin
         case whitelist(Set<String>)   // small fixed set
+        case matcher(Prebuilt.CORSOriginMatcher)   // new
 
         public func allowed(for request: HTTPRequest, allowCredentials: Bool) -> String? {
             // If there is no Origin header, this is not a CORS request.
@@ -26,6 +28,9 @@ public struct CORSConfig: Sendable {
 
             case .whitelist(let set):
                 return set.contains(origin) ? origin : nil
+
+            case .matcher(let matcher):
+                return matcher.allows(origin) ? origin : nil
             }
         }
     }

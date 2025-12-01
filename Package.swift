@@ -17,6 +17,11 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/leviouwendijk/plate.git", branch: "master"),
         .package(url: "https://github.com/leviouwendijk/Structures.git", branch: "master"),
+
+        .package(
+            url: "https://github.com/leviouwendijk/Parsers.git",
+            branch: "master"
+        ),
         // .package(url: "https://github.com/apple/pkl-swift", from: "0.2.1"),
     ],
     targets: [
@@ -25,6 +30,7 @@ let package = Package(
             dependencies: [
                 .product(name: "plate", package: "plate"),
                 .product(name: "Structures", package: "Structures"),
+                .product(name: "Parsers", package: "Parsers"),
                 // .product(name: "PklSwift", package: "pkl-swift"),
             ]
         ),
