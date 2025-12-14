@@ -1,13 +1,21 @@
 import Foundation
 import plate
 
-public enum BearerAuthorityError: Error, LocalizedError {
+public enum BearerAuthorityError: Error, LocalizedError, Sendable {
     case misconfigured
+    case sanitizationFailed(kind: Kind, emptyOrWhitespace: Int, modifiedByTrimming: Int)
+
+    public enum Kind: String, Sendable {
+        case authorized
+        case invalidated
+    }
 
     public var errorDescription: String? {
         switch self {
         case .misconfigured:
-            return "Bearere authority misconfigured"
+            return "Bearer authority misconfigured"
+        case let .sanitizationFailed(kind, empty, modified):
+            return "Bearer authority \(kind.rawValue) tokens failed sanitization (empty/whitespace: \(empty), trimming-changed: \(modified))"
         }
     }
 }
@@ -21,18 +29,15 @@ public struct BearerAuthority: Sendable {
         authorized_tokens: Set<String>,
         invalidated_tokens: Set<String> = []
     ) throws {
-        let auth_sanitized = authorized_tokens
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        let authorized = try Self.sanitize(authorized_tokens, kind: .authorized)
+        let invalidated = try Self.sanitize(invalidated_tokens, kind: .invalidated)
 
-        let auth_sanitized_set = Set(auth_sanitized)
-
-        guard !auth_sanitized_set.isEmpty else {
+        guard !authorized.isEmpty else {
             throw BearerAuthorityError.misconfigured
         }
 
-        self.authorized = auth_sanitized_set
-        self.invalidated = invalidated_tokens
+        self.authorized = authorized
+        self.invalidated = invalidated
     }
 
     /// Accepts symbols used for environment extraction
@@ -79,6 +84,41 @@ public struct BearerAuthority: Sendable {
             authorized: auth_symbols,
             invalidated: invalidated,
         )
+    }
+
+    private static func sanitize(
+        _ tokens: Set<String>,
+        kind: BearerAuthorityError.Kind
+    ) throws (BearerAuthorityError) -> Set<String> {
+        var emptyOrWhitespace = 0
+        var modifiedByTrimming = 0
+        var out: Set<String> = []
+        out.reserveCapacity(tokens.count)
+
+        for token in tokens {
+            let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if trimmed.isEmpty {
+                emptyOrWhitespace += 1
+                continue
+            }
+
+            if trimmed != token {
+                modifiedByTrimming += 1
+            }
+
+            out.insert(trimmed)
+        }
+
+        if emptyOrWhitespace > 0 || modifiedByTrimming > 0 {
+            throw .sanitizationFailed(
+                kind: kind,
+                emptyOrWhitespace: emptyOrWhitespace,
+                modifiedByTrimming: modifiedByTrimming
+            )
+        }
+
+        return out
     }
 
     // more actor like:
