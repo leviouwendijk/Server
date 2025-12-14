@@ -5,21 +5,21 @@ public struct BearerAuthorityMiddleware: Middleware {
     public let name = "bearer-authority-auth"
     private let realmName: String
 
-    private let bearerAuthority: BearerAuthority
+    private let authority: BearerAuthority
 
     public init(
-        bearerAuthority: BearerAuthority,
+        authority: BearerAuthority,
         realmName: String = "api"
     ) {
-        self.bearerAuthority = bearerAuthority
+        self.authority = authority
         self.realmName = realmName
     }
 
     public init(
-        bearerAuthorityProvider: @escaping @Sendable () throws -> BearerAuthority,
+        authority_closure: @escaping @Sendable () throws -> BearerAuthority,
         realmName: String = "api"
     ) throws {
-        self.bearerAuthority = try bearerAuthorityProvider()
+        self.authority = try authority_closure()
         self.realmName = realmName
     }
 
@@ -101,7 +101,7 @@ public struct BearerAuthorityMiddleware: Middleware {
         next: @Sendable (HTTPRequest, Router) async -> HTTPResponse
     ) async -> HTTPResponse {
         let (status, response) = Self.authenticate(
-            authority: bearerAuthority,
+            authority: authority,
             provided: request.bearerToken(),
             bearerRealm: realmName
         )
