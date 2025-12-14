@@ -16,66 +16,62 @@ public struct BearerAuthority: Sendable {
     public let authorized: Set<String>
     public let invalidated: Set<String>
 
-    private init(
-        authorized: Set<String>,
-        invalidated: Set<String>
+    /// Accepts raw tokens (less safe, unless you're dealing in short-lived tokens)
+    public init(
+        authorized_tokens: Set<String>,
+        invalidated_tokens: Set<String>
     ) throws {
-        guard !authorized.isEmpty else {
+        guard !authorized_tokens.isEmpty else {
             throw BearerAuthorityError.misconfigured
         }
 
-        self.authorized = authorized
-        self.invalidated = invalidated
+        self.authorized = authorized_tokens
+        self.invalidated = invalidated_tokens
     }
 
+    /// Accepts symbols used for environment extraction
     public init(
-        authorizedSymbols: [String],
-        invalidatedSymbols: [String],
-
-        authorized: Set<String>,
-        invalidated: Set<String>
+        authorized: [String],
+        invalidated: [String],
     ) throws {
         var authorized_tokens: [String] = []
-        for symbol in authorizedSymbols {
+        for symbol in authorized {
             let token = try EnvironmentExtractor.value(.symbol(symbol))
             authorized_tokens.append(token)
         }
         let auth_set = Set(authorized_tokens)
 
         var invalidated_tokens: [String] = []
-        for symbol in invalidatedSymbols {
+        for symbol in invalidated {
             let token = try EnvironmentExtractor.value(.symbol(symbol))
             invalidated_tokens.append(token)
         }
         let invalid_set = Set(invalidated_tokens)
 
         try self.init(
-            authorized: auth_set.union(authorized),
-            invalidated: invalid_set.union(invalidated)
+            authorized_tokens: auth_set,
+            invalidated_tokens: invalid_set
         )
     }
 
+    /// Accepts 'ServerConfig' for pre-registering app-based '<APP>_API_KEY' symbol
+    /// Possiblity for manual additions in symbols
     public init(
         config: ServerConfig,
         suffix: SynthesizedSymbol = .api_key,
 
-        authorizedSymbols: [String] = [],
-        invalidatedSymbols: [String] = [],
-
-        authorized: Set<String> = [],
-        invalidated: Set<String> = []
+        authorized: [String] = [],
+        invalidated: [String] = [],
     ) throws {
         let symbol = try config.autoSynthesizeTokenSymbol(suffix: suffix)
 
         var auth_symbols: [String] = []
         auth_symbols.append(symbol)
-        auth_symbols.append(contentsOf: authorizedSymbols)
+        auth_symbols.append(contentsOf: authorized)
 
         try self.init(
-            authorizedSymbols: auth_symbols,
-            invalidatedSymbols: invalidatedSymbols,
-            authorized: authorized,
-            invalidated: invalidated
+            authorized: auth_symbols,
+            invalidated: invalidated,
         )
     }
 
