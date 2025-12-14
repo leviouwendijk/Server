@@ -21,11 +21,17 @@ public struct BearerAuthority: Sendable {
         authorized_tokens: Set<String>,
         invalidated_tokens: Set<String> = []
     ) throws {
-        guard !authorized_tokens.isEmpty else {
+        let auth_sanitized = authorized_tokens
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        let auth_sanitized_set = Set(auth_sanitized)
+
+        guard !auth_sanitized_set.isEmpty else {
             throw BearerAuthorityError.misconfigured
         }
 
-        self.authorized = authorized_tokens
+        self.authorized = auth_sanitized_set
         self.invalidated = invalidated_tokens
     }
 
