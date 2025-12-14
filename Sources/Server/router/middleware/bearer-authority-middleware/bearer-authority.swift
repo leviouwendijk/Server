@@ -19,7 +19,7 @@ public struct BearerAuthority: Sendable {
     /// Accepts raw tokens (less safe, unless you're dealing in short-lived tokens)
     public init(
         authorized_tokens: Set<String>,
-        invalidated_tokens: Set<String>
+        invalidated_tokens: Set<String> = []
     ) throws {
         guard !authorized_tokens.isEmpty else {
             throw BearerAuthorityError.misconfigured
@@ -32,7 +32,7 @@ public struct BearerAuthority: Sendable {
     /// Accepts symbols used for environment extraction
     public init(
         authorized: [String],
-        invalidated: [String],
+        invalidated: [String] = [],
     ) throws {
         var authorized_tokens: [String] = []
         for symbol in authorized {
