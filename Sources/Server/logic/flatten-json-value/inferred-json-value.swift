@@ -1,5 +1,6 @@
 import Foundation
-import Structures
+// import Structures
+import Primitives
 
 internal func inferredJSONTypeName(_ value: JSONValue) -> String {
     switch value {

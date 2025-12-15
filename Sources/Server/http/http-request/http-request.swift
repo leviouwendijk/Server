@@ -1,5 +1,6 @@
 import Foundation
-import Structures
+// import Structures
+import Primitives
 
 public struct HTTPRequest: Sendable {
     public let method: HTTPMethod

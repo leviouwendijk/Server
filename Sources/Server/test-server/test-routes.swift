@@ -1,5 +1,6 @@
 import Foundation
-import Structures
+// import Structures
+import Primitives
 
 public let testRoutes = routes {
     // Basic Routes

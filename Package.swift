@@ -16,7 +16,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/leviouwendijk/plate.git", branch: "master"),
-        .package(url: "https://github.com/leviouwendijk/Structures.git", branch: "master"),
+        // .package(url: "https://github.com/leviouwendijk/Structures.git", branch: "master"),
+        .package(url: "https://github.com/leviouwendijk/Primitives.git", branch: "master"),
 
         .package(
             url: "https://github.com/leviouwendijk/Parsers.git",
@@ -29,7 +30,8 @@ let package = Package(
             name: "Server",
             dependencies: [
                 .product(name: "plate", package: "plate"),
-                .product(name: "Structures", package: "Structures"),
+                // .product(name: "Structures", package: "Structures"),
+                .product(name: "Primitives", package: "Primitives"),
                 .product(name: "Parsers", package: "Parsers"),
                 // .product(name: "PklSwift", package: "pkl-swift"),
             ]

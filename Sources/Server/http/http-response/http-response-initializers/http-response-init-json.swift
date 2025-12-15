@@ -1,5 +1,6 @@
 import Foundation
-import Structures
+// import Structures
+import Primitives
 import plate
 
 public extension HTTPResponse {

@@ -1,5 +1,6 @@
 import Foundation
-import Structures
+// import Structures
+import Primitives
 
 public func flattenJSONTypes(_ value: JSONValue) -> [String: String] {
     var result: [String: String] = [:]
