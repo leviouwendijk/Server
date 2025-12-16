@@ -2,21 +2,12 @@
   "originHash" : "5a927b51dd4c9eb4b78d3d9ec34c95e1d78df915b7097e18b367b0d58fa6996d",
   "pins" : [
     {
-      "identity" : "extensions",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Extensions.git",
-      "state" : {
-        "branch" : "master",
-        "revision" : "2670525e08c06638511e3b6a58093efbcc0d78f3"
-      }
-    },
-    {
       "identity" : "parsers",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/leviouwendijk/Parsers.git",
       "state" : {
         "branch" : "master",
-        "revision" : "df1cb39e5f8ceafe0123d6ef2f9e23927175ac58"
+        "revision" : "4f53b480155fa4cf6c3144b74ced2b3f0ef98ef7"
       }
     },
     {
@@ -25,7 +16,7 @@
       "location" : "https://github.com/leviouwendijk/plate.git",
       "state" : {
         "branch" : "master",
-        "revision" : "97114f11e4ddfdbc148d2a00c54208d664a7c537"
+        "revision" : "9ae5f434b645b94adca307881598c635265527c3"
       }
     },
     {
@@ -34,16 +25,7 @@
       "location" : "https://github.com/leviouwendijk/Primitives.git",
       "state" : {
         "branch" : "master",
-        "revision" : "a5d53293125949560d5bc9dad4d6c1b43e1a200a"
-      }
-    },
-    {
-      "identity" : "structures",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Structures.git",
-      "state" : {
-        "branch" : "master",
-        "revision" : "ff0d0bd37df826f0ddff755cd93519bf17db1ffb"
+        "revision" : "95d098547aa8c78b78613753163a1fa8bbbb6a1e"
       }
     }
   ],
