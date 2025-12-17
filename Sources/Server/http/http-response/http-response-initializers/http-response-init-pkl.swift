@@ -1,10 +1,10 @@
 import Foundation
 // import Structures
 import Primitives
-import plate
+// import plate
 
-internal func renderJSONValueAsPKL(_ value: JSONValue, indent: Int = 0) -> String {
-    let indentStr = String(repeating: " ", count: indent * StandardIndentation.size)
+internal func renderJSONValueAsPKL(_ value: JSONValue, indent: Int = 0, indent_size: Int = 4) -> String {
+    let indentStr = String(repeating: " ", count: indent * indent_size)
     
     switch value {
     case .null:
@@ -22,7 +22,7 @@ internal func renderJSONValueAsPKL(_ value: JSONValue, indent: Int = 0) -> Strin
             return "[]"
         }
         let childIndent = indent + 1
-        let childIndentStr = String(repeating: " ", count: childIndent * StandardIndentation.size)
+        let childIndentStr = String(repeating: " ", count: childIndent * indent_size)
         let items = arr.map { childIndentStr + renderJSONValueAsPKL($0, indent: childIndent) }
             .joined(separator: "\n")
         return "[\n\(items)\n\(indentStr)]"
@@ -31,7 +31,7 @@ internal func renderJSONValueAsPKL(_ value: JSONValue, indent: Int = 0) -> Strin
             return "{}"
         }
         let childIndent = indent + 1
-        let childIndentStr = String(repeating: " ", count: childIndent * StandardIndentation.size)
+        let childIndentStr = String(repeating: " ", count: childIndent * indent_size)
         let items = obj.sorted { $0.key < $1.key }
             .map { key, val in
                 let renderedVal = renderJSONValueAsPKL(val, indent: childIndent)

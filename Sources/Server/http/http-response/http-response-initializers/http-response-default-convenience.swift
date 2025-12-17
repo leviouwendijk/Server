@@ -1,6 +1,7 @@
 import Foundation
-import plate
-    
+// import plate
+import Methods
+
 public extension HTTPResponse {
     /// Create a 200 OK response
     static func ok(body: String = "", headers: [String: String] = [:]) -> HTTPResponse {

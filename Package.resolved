@@ -1,5 +1,5 @@
 {
-  "originHash" : "7759fea6f82ea009d09a12d92f277b0929419b055797b3b0eade15feccd9c18e",
+  "originHash" : "40e8e942b9071f4cb68a6d43e68fc8b06c7dc915b4e64cb97e963198bd8b97f6",
   "pins" : [
     {
       "identity" : "loggers",
@@ -16,7 +16,7 @@
       "location" : "https://github.com/leviouwendijk/Methods.git",
       "state" : {
         "branch" : "master",
-        "revision" : "b73a86d86d4d16e4cc95edad2df456c60463e44a"
+        "revision" : "3668117392a5e07ba36ba461adb90f1805461c3e"
       }
     },
     {
@@ -44,15 +44,6 @@
       "state" : {
         "branch" : "master",
         "revision" : "c967317233390778ec51effc7c601f497433d184"
-      }
-    },
-    {
-      "identity" : "plate",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/plate.git",
-      "state" : {
-        "branch" : "master",
-        "revision" : "4c13e9eeb835689315c92b90dcdbbd00d833c8eb"
       }
     },
     {
