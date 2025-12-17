@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 import Network
 
 final class RequestConnectionHandler: @unchecked Sendable {

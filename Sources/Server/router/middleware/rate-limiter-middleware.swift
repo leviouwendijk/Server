@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 
 // Global rate limiter (shared across all requests)
 public actor GlobalRateLimiter: Sendable {

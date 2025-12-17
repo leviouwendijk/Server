@@ -1,3 +1,5 @@
+import HTTP
+
 @available(*, message: "use new methods instead")
 public func parseHTTPResponse(_ raw: String) -> HTTPResponse? {
     let parts = raw.components(separatedBy: "\r\n\r\n")

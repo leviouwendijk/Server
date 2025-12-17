@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 
 public protocol ReturnableResponse: Codable, Sendable {
     func response(status: HTTPStatus) throws -> HTTPResponse

@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 
 public struct CORSMiddleware: Middleware {
     public let name = "cors"

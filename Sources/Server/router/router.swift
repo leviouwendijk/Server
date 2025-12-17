@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 
 public struct Router: Sendable {
     public let routes: [Route]

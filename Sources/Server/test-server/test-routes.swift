@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 // import Structures
 import Primitives
 

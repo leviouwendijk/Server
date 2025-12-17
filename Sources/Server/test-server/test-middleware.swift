@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 import Milieu
 
 /// Global expected API key, loaded once from env.

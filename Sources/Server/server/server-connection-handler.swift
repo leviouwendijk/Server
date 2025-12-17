@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import HTTP
 import Loggers
 
 final class ServerConnectionHandler: @unchecked Sendable {

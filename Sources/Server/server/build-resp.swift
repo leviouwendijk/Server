@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 
 @available(*, message: "use new methods instead")
 public func buildHTTPResponseString(_ response: HTTPResponse) -> String {

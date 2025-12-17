@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 
 public enum RouteError: Error, LocalizedError {
     case invalidMiddleware

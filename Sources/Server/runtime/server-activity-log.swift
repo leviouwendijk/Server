@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 import Loggers
 
 public enum ServerActivitySelection: Sendable {

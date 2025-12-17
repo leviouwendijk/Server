@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 
 public enum RequestAuth: Sendable {
     case none

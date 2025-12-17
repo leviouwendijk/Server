@@ -1,4 +1,5 @@
 import Foundation
+import HTTP
 
 public struct TestClient {
     public let config: HTTPClientConfig
