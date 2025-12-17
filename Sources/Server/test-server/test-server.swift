@@ -1,5 +1,5 @@
 import Foundation
-import plate
+import Loggers
 
 public struct TestServer {
     public let config: ServerConfig

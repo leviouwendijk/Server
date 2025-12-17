@@ -1,6 +1,6 @@
 import Foundation
 import Security
-import plate
+import Milieu
 
 public enum CryptographicCATrustError: Error, LocalizedError {
     case trustEvaluationFailed(String)

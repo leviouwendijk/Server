@@ -1,5 +1,5 @@
 import Foundation
-import plate
+import Loggers
 
 public enum ServerActivitySelection: Sendable {
     case all

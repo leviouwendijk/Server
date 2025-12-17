@@ -1,13 +1,31 @@
 {
-  "originHash" : "5a927b51dd4c9eb4b78d3d9ec34c95e1d78df915b7097e18b367b0d58fa6996d",
+  "originHash" : "7759fea6f82ea009d09a12d92f277b0929419b055797b3b0eade15feccd9c18e",
   "pins" : [
+    {
+      "identity" : "loggers",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leviouwendijk/Loggers.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "2de48b468a3be0b1d4f0c47310628ec5b53d46e9"
+      }
+    },
     {
       "identity" : "methods",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/leviouwendijk/Methods.git",
       "state" : {
         "branch" : "master",
-        "revision" : "bddfab93235482cdd8b2deed7b38859531adece1"
+        "revision" : "b73a86d86d4d16e4cc95edad2df456c60463e44a"
+      }
+    },
+    {
+      "identity" : "milieu",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leviouwendijk/Milieu.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "242e890af20eb5f77087cf116ae9374f1f809b2a"
       }
     },
     {
@@ -16,7 +34,16 @@
       "location" : "https://github.com/leviouwendijk/Parsers.git",
       "state" : {
         "branch" : "master",
-        "revision" : "a8207d34fc1c3df668482fcc49ffa976475ee553"
+        "revision" : "d335b2ccda012b70195dfb135d1697e5c8e437e2"
+      }
+    },
+    {
+      "identity" : "parsing",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leviouwendijk/Parsing.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "c967317233390778ec51effc7c601f497433d184"
       }
     },
     {
@@ -25,7 +52,7 @@
       "location" : "https://github.com/leviouwendijk/plate.git",
       "state" : {
         "branch" : "master",
-        "revision" : "f531a9b03635a8154537fc9b4ab9320793e6b610"
+        "revision" : "4c13e9eeb835689315c92b90dcdbbd00d833c8eb"
       }
     },
     {
@@ -35,6 +62,24 @@
       "state" : {
         "branch" : "master",
         "revision" : "95d098547aa8c78b78613753163a1fa8bbbb6a1e"
+      }
+    },
+    {
+      "identity" : "variables",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leviouwendijk/Variables.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "c533569cd399d8d4762f5f4f8241e2234735c6d0"
+      }
+    },
+    {
+      "identity" : "writers",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leviouwendijk/Writers.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "6084ab52b34ab2433000ad865cfa13bd6fe3b804"
       }
     }
   ],

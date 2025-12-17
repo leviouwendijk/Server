@@ -1,5 +1,5 @@
 import Foundation
-import plate
+import Milieu
 
 public struct BearerAuthorityMiddleware: Middleware {
     public let name = "bearer-authority-auth"
