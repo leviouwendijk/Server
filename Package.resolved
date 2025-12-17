@@ -1,13 +1,22 @@
 {
-  "originHash" : "35d05328f56c9f47c5f784f3d9f9779f04837d94d6e4cba9fdc42e5d4d7b4090",
+  "originHash" : "e354cbddbdaf561acc5faa6b561ae766f3e9b9ef93c5b4cae2c1f200e82e66d2",
   "pins" : [
+    {
+      "identity" : "cryptography",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leviouwendijk/Cryptography.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "37e2731874ca54ad1feda5ba982b133b8355ed52"
+      }
+    },
     {
       "identity" : "http",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/leviouwendijk/HTTP.git",
       "state" : {
         "branch" : "master",
-        "revision" : "cf2910a2c04a2ab185446c5e9edf3d74ba91dbe8"
+        "revision" : "8cc657d0306daeaa5b192865d6bdc694800a8142"
       }
     },
     {

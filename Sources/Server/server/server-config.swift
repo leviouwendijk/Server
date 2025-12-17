@@ -2,6 +2,7 @@ import Foundation
 import Variables
 import Milieu
 import Loggers
+import Cryptography
 
 public enum ConfigError: Error, LocalizedError {
     case failedToResolveName
