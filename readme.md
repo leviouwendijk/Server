@@ -5,17 +5,16 @@ A lightweight library for creating HTTP endpoint routes.
 Because long compile times are no fun.
 
 Depends on light subcomponents:
-- []("https://github.com/leviouwendijk/HTTP.git")
-- []("https://github.com/leviouwendijk/Cryptography.git")
+- [HTTP]("https://github.com/leviouwendijk/HTTP.git")
+- [Cryptography]("https://github.com/leviouwendijk/Cryptography.git")
 
-- []("https://github.com/leviouwendijk/Milieu.git")
-- []("https://github.com/leviouwendijk/Loggers.git")
+- [Milieu]("https://github.com/leviouwendijk/Milieu.git")
+- [Loggers]("https://github.com/leviouwendijk/Loggers.git")
 
-- []("https://github.com/leviouwendijk/Variables.git")
-- []("https://github.com/leviouwendijk/Primitives.git")
+- [Variables]("https://github.com/leviouwendijk/Variables.git")
+- [Primitives]("https://github.com/leviouwendijk/Primitives.git")
 
-- []("https://github.com/leviouwendijk/Parsers.git")
-
+- [Parsers]("https://github.com/leviouwendijk/Parsers.git")
 
 # No-bloat project initialization
 
