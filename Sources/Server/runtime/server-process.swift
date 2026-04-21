@@ -8,6 +8,7 @@ public struct ServerProcess: Sendable {
     public let router: Router
     public let engine: ServerEngine
     public let logger: StandardLogger?
+    public let actions: ServerActions
 
     public init(
         config: ServerConfig = ServerConfig.externallyManagedProcess(),
@@ -16,7 +17,8 @@ public struct ServerProcess: Sendable {
         statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
         logger: StandardLogger? = nil,
 
-        activity: HTTPActivityCallback? = nil
+        activity: HTTPActivityCallback? = nil,
+        actions: ServerActions = .empty
     ) {
         self.config = config
         self.routes = routes
@@ -29,48 +31,95 @@ public struct ServerProcess: Sendable {
             activityCallback: activity
         )
         self.logger = logger
+        self.actions = actions
     }
 
     /// Instance entry point
-    public func run() async {
+    public mutating func run() async {
         do {
+            for action in actions.launch {
+                await logger?.log("Running launch action: \(action.name)", level: .info)
+                await action.perform()
+            }
+
             try await engine.start()
             try await Task.sleep(nanoseconds: UInt64.max)
+        } catch is CancellationError {
+            await logger?.log("Server process cancelled", level: .debug)
         } catch {
-            print("Failed to start server: \(error.localizedDescription)")
+            if let logger {
+                await logger.log("Failed to run server process: \(error.localizedDescription)", level: .error)
+            } else {
+                print("Failed to run server process: \(error.localizedDescription)")
+            }
         }
+
+        await terminate()
     }
 
     /// Static entry point
     public static func run(
         config: ServerConfig = ServerConfig.externallyManagedProcess(),
         routes: [Route],
-
         statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
         logger: StandardLogger? = nil,
-
-        activity: HTTPActivityCallback? = nil
+        activity: HTTPActivityCallback? = nil,
+        actions: ServerActions = .empty
     ) async {
-        let router = Router(routes: routes)
-        let engine = ServerEngine(
+        var process = ServerProcess(
             config: config,
-            router: router,
+            routes: routes,
             statusRegistry: statusRegistry,
             logger: logger,
-            activityCallback: activity
+            activity: activity,
+            actions: actions
         )
-        
-        do {
-            try await engine.start()
-            try await Task.sleep(nanoseconds: UInt64.max)
-        } catch {
-            print("Failed to start server: \(error.localizedDescription)")
+
+        await process.run()
+    }
+
+    /// Static entry point
+    // public static func run(
+    //     config: ServerConfig = ServerConfig.externallyManagedProcess(),
+    //     routes: [Route],
+
+    //     statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
+    //     logger: StandardLogger? = nil,
+
+    //     activity: HTTPActivityCallback? = nil,
+    //     actions: [ServerActions] = []
+    // ) async {
+    //     let router = Router(routes: routes)
+    //     let engine = ServerEngine(
+    //         config: config,
+    //         router: router,
+    //         statusRegistry: statusRegistry,
+    //         logger: logger,
+    //         activityCallback: activity
+    //     )
+
+    //     do {
+    //         try await engine.start()
+    //         try await Task.sleep(nanoseconds: UInt64.max)
+    //     } catch {
+    //         print("Failed to start server: \(error.localizedDescription)")
+    //     }
+
+    // }
+
+    public mutating func terminate() async {
+        await logger?.log("Stopping server process", level: .info)
+        await engine.stop()
+
+        for action in actions.termination.reversed() {
+            await logger?.log("Running termination action: \(action.name)", level: .info)
+            await action.perform()
         }
     }
 }
 
 // The above function abstracts:
-// 
+//
 // @main
 // struct AppRuntime {
 //     static func main() async {
@@ -105,13 +154,13 @@ public struct ServerProcess: Sendable {
 
 // Alternatively, you can hydrate an instance and run that without static entry:
 // This makes config (ServerConfig instance) reusable, say, in your routes
-// 
+//
 // You *could* make the ServerProcess a global constant:
 //
 // let process = ServerProcess(routes: routes())
-// 
+//
 // But this requires that your routes() func you implement does **not** throw.
-// 
+//
 //
 // If you **do** want to make it throw, make main() async throws, define process inside it:
 
