@@ -35,7 +35,7 @@ public struct ServerProcess: Sendable {
     }
 
     /// Instance entry point
-    public mutating func run() async {
+    public func run() async {
         do {
             for action in actions.launch {
                 await logger?.log("Running launch action: \(action.name)", level: .info)
@@ -66,7 +66,7 @@ public struct ServerProcess: Sendable {
         activity: HTTPActivityCallback? = nil,
         actions: ServerActions = .empty
     ) async {
-        var process = ServerProcess(
+        let process = ServerProcess(
             config: config,
             routes: routes,
             statusRegistry: statusRegistry,
@@ -107,7 +107,7 @@ public struct ServerProcess: Sendable {
 
     // }
 
-    public mutating func terminate() async {
+    public func terminate() async {
         await logger?.log("Stopping server process", level: .info)
         await engine.stop()
 
