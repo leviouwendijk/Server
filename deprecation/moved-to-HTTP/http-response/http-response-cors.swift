@@ -66,44 +66,104 @@ public struct CORS: Sendable {
         self.config = config
     }
 
-    /// Handle a potential CORS preflight. Returns a response if we handled it,
-    /// or nil if this is not a CORS preflight request.
-    public func preflightResponse(for request: HTTPRequest) -> HTTPResponse? {
-        guard request.method == .options,
-              request.header("Origin") != nil,
-              request.header("Access-Control-Request-Method") != nil
-        else {
+    // /// Handle a potential CORS preflight. Returns a response if we handled it,
+    // /// or nil if this is not a CORS preflight request.
+    // public func preflightResponse(for request: HTTPRequest) -> HTTPResponse? {
+    //     guard request.method == .options,
+    //           request.header("Origin") != nil,
+    //           request.header("Access-Control-Request-Method") != nil
+    //     else {
+    //         return nil
+    //     }
+
+    //     guard let allowOrigin = config.allowedOrigin.allowed(for: request, allowCredentials: config.allowCredentials) else {
+    //         // Origin not allowed – SHOULD be 403/other, but we can just not CORS it
+    //         return HTTPResponse.noContent()
+    //     }
+
+    //     var resp = HTTPResponse.noContent()
+
+    //     // Required CORS headers
+    //     resp.headers["Access-Control-Allow-Origin"] = allowOrigin
+    //     resp.headers["Vary"] = "Origin"
+
+    //     let methods = config.allowedMethods.map(\.rawValue).joined(separator: ", ")
+    //     resp.headers["Access-Control-Allow-Methods"] = methods
+
+    //     if !config.allowedHeaders.isEmpty {
+    //         resp.headers["Access-Control-Allow-Headers"] = config.allowedHeaders.joined(separator: ", ")
+    //     }
+
+    //     if let maxAge = config.maxAgeSeconds {
+    //         resp.headers["Access-Control-Max-Age"] = String(maxAge)
+    //     }
+
+    //     if config.allowCredentials {
+    //         resp.headers["Access-Control-Allow-Credentials"] = "true"
+    //     }
+
+    //     return resp
+    // }
+
+    /// Handle OPTIONS for CORS-controlled routes.
+    ///
+    /// Important:
+    /// Once an OPTIONS request reaches CORSMiddleware, it must be terminal.
+    /// It must not fall through into route handlers, auth, rate-limiters, or upstream calls.
+    public func preflightResponse(
+        for request: HTTPRequest
+    ) -> HTTPResponse? {
+        guard request.method == .options else {
             return nil
         }
 
-        guard let allowOrigin = config.allowedOrigin.allowed(for: request, allowCredentials: config.allowCredentials) else {
-            // Origin not allowed – SHOULD be 403/other, but we can just not CORS it
+        guard let allowOrigin = config.allowedOrigin.allowed(
+            for: request,
+            allowCredentials: config.allowCredentials
+        ) else {
             return HTTPResponse.noContent()
         }
 
-        var resp = HTTPResponse.noContent()
+        if let requestedMethod = request.header("Access-Control-Request-Method")?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased(),
+           !requestedMethod.isEmpty {
+            let allowed = Set(
+                config.allowedMethods.map {
+                    $0.rawValue.uppercased()
+                }
+            )
 
-        // Required CORS headers
-        resp.headers["Access-Control-Allow-Origin"] = allowOrigin
-        resp.headers["Vary"] = "Origin"
+            guard allowed.contains(requestedMethod) else {
+                return HTTPResponse.noContent()
+            }
+        }
 
-        let methods = config.allowedMethods.map(\.rawValue).joined(separator: ", ")
-        resp.headers["Access-Control-Allow-Methods"] = methods
+        var response = HTTPResponse.noContent()
+
+        response.headers["Access-Control-Allow-Origin"] = allowOrigin
+        response.headers["Vary"] = "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+
+        response.headers["Access-Control-Allow-Methods"] = config.allowedMethods
+            .map(\.rawValue)
+            .joined(separator: ", ")
 
         if !config.allowedHeaders.isEmpty {
-            resp.headers["Access-Control-Allow-Headers"] = config.allowedHeaders.joined(separator: ", ")
+            response.headers["Access-Control-Allow-Headers"] = config.allowedHeaders
+                .joined(separator: ", ")
         }
 
         if let maxAge = config.maxAgeSeconds {
-            resp.headers["Access-Control-Max-Age"] = String(maxAge)
+            response.headers["Access-Control-Max-Age"] = String(maxAge)
         }
 
         if config.allowCredentials {
-            resp.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
         }
 
-        return resp
+        return response
     }
+
 
     /// Apply CORS headers to a normal response (non-preflight).
     public func apply(to response: HTTPResponse, for request: HTTPRequest) -> HTTPResponse {
