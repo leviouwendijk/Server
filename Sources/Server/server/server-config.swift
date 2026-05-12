@@ -3,10 +3,11 @@ import Variables
 import Milieu
 import Loggers
 import Cryptography
+import HTTP
 
 public enum ConfigError: Error, LocalizedError {
     case failedToResolveName
-    
+
     public var errorDescription: String? {
         switch self {
         case .failedToResolveName:
@@ -20,7 +21,7 @@ public enum ConfigError: Error, LocalizedError {
             return "The name parameter is empty"
         }
     }
-    
+
     public var recoverySuggestion: String? {
         switch self {
         case .failedToResolveName:
@@ -29,85 +30,179 @@ public enum ConfigError: Error, LocalizedError {
     }
 }
 
+public struct ServerLimits: Sendable, Hashable, Equatable {
+    public let content: HTTPContentLengthPolicy
+    public let headers: HTTPHeaderPolicy
+
+    public init(
+        content: HTTPContentLengthPolicy = .default,
+        headers: HTTPHeaderPolicy = .requestDefault
+    ) {
+        self.content = content
+        self.headers = headers
+    }
+
+    public static let `default` = Self()
+}
+
+public struct ServerSecurity: Sendable, Hashable, Equatable {
+    public let target: HTTPRequestTargetPolicy
+    public let methods: Set<HTTPMethod>
+
+    public init(
+        target: HTTPRequestTargetPolicy = .default,
+        methods: Set<HTTPMethod> = HTTPMethod.defaultServerAllowed
+    ) {
+        self.target = target
+        self.methods = methods
+    }
+
+    public static let `default` = Self()
+
+    public static let permissive = Self(
+        target: .permissive,
+        methods: HTTPMethod.allServerMethods
+    )
+}
+
 public struct ServerConfig: Sendable {
     public let name: String?
     public let port: UInt16
     public let host: String
     public let logLevel: LogLevel
     public let maxConnections: Int?
-    
+    public let limits: ServerLimits
+    public let security: ServerSecurity
+
     public init(
         name: String? = nil,
         port: UInt16 = 9090,
         host: String = "127.0.0.1",
         logLevel: LogLevel = .info,
-        maxConnections: Int? = nil
+        maxConnections: Int? = nil,
+        limits: ServerLimits = .default,
+        security: ServerSecurity = .default
     ) {
         self.name = name
         self.port = port
         self.host = host
         self.logLevel = logLevel
         self.maxConnections = maxConnections
-    }
-
-    public init(
-        name: String? = nil,
-        logLevel: LogLevel? = nil,
-        maxConnections: Int? = nil
-    ) {
-        if let portStr = try? EnvironmentExtractor.value(.symbol("PORT")),
-           let portValue = UInt16(portStr) {
-            self.port = portValue
-        } else {
-            self.port = 9091  // Default fallback
-        }
-        
-        if let hostValue = try? EnvironmentExtractor.value(.symbol("HOST")) {
-            self.host = hostValue
-        } else {
-            self.host = "127.0.0.1"
-        }
-        
-        if let log = logLevel { // first passed arg
-            self.logLevel = log
-        } else if let levelStr = try? EnvironmentExtractor.value(.symbol("LOG_LEVEL")) { // then env
-            self.logLevel = LogLevel(rawValue: levelStr.lowercased()) ?? .info
-        } else {
-            self.logLevel = .info // then defaulft
-        }
-
-        self.name = try? EnvironmentExtractor.value(.symbol("APP_NAME"))
-        self.maxConnections = maxConnections
+        self.limits = limits
+        self.security = security
     }
 
     public static func externallyManagedProcess(
+        name: String? = nil,
         logLevel: LogLevel? = nil,
         maxConnections: Int? = nil,
+        limits: ServerLimits = .default,
+        security: ServerSecurity = .default
     ) -> Self {
-        return self.init(logLevel: logLevel, maxConnections: maxConnections)
+        Self(
+            name: name ?? env("APP_NAME"),
+            port: envPort(default: 9091),
+            host: env("HOST") ?? "127.0.0.1",
+            logLevel: envLogLevel(logLevel, default: .info),
+            maxConnections: maxConnections,
+            limits: limits,
+            security: security
+        )
     }
 
-    public func autoSynthesizeTokenSymbol(suffix: SynthesizedSymbol = .api_key) throws -> String {
-        let options = SyntheticSymbolOptions(suffix: suffix)
-        return try SynthesizedSymbol.synthesize(name: name, using: options)
+    public var requestContentLengthPolicy: HTTPContentLengthPolicy {
+        limits.content
+    }
+
+    public var requestHeaderPolicy: HTTPHeaderPolicy {
+        limits.headers
+    }
+
+    public var requestTargetPolicy: HTTPRequestTargetPolicy {
+        security.target
+    }
+
+    public var allowedMethods: Set<HTTPMethod> {
+        security.methods
+    }
+
+    public func synthesize(
+        _ suffix: SynthesizedSymbol = .api_key
+    ) throws -> String {
+        let options = SyntheticSymbolOptions(
+            suffix: suffix
+        )
+
+        return try SynthesizedSymbol.synthesize(
+            name: resolveName(),
+            using: options
+        )
+    }
+
+    @available(
+        *,
+        deprecated,
+        renamed: "synthesize(_:)"
+    )
+    public func autoSynthesizeTokenSymbol(
+        suffix: SynthesizedSymbol = .api_key
+    ) throws -> String {
+        try synthesize(
+            suffix
+        )
     }
 
     public func resolveName() throws -> String {
         guard let name else {
             throw ConfigError.failedToResolveName
         }
+
         return name
     }
 
     public func keys() throws -> CryptographicKeyPair {
-        let n = try resolveName()
-        // let pub = try CryptographicKeyOperation.loadKey(name: n, .public)
-        // let priv = try CryptographicKeyOperation.loadKey(name: n, .private)
-        // return .init(
-        //     publicKey: pub,
-        //     privateKey: priv
-        // )
-        return try CryptographicKeyOperation.keys(prefix: n)
+        let name = try resolveName()
+
+        return try CryptographicKeyOperation.keys(
+            prefix: name
+        )
+    }
+
+    private static func env(
+        _ symbol: String
+    ) -> String? {
+        try? EnvironmentExtractor.value(
+            .symbol(symbol)
+        )
+    }
+
+    private static func envPort(
+        default fallback: UInt16
+    ) -> UInt16 {
+        guard let value = env("PORT"),
+              let port = UInt16(value)
+        else {
+            return fallback
+        }
+
+        return port
+    }
+
+    private static func envLogLevel(
+        _ provided: LogLevel?,
+        default fallback: LogLevel
+    ) -> LogLevel {
+        if let provided {
+            return provided
+        }
+
+        guard let value = env("LOG_LEVEL") else {
+            return fallback
+        }
+
+        return LogLevel(
+            rawValue: value.lowercased()
+        ) ?? fallback
     }
 }
 

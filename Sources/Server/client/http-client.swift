@@ -81,6 +81,7 @@ public struct HTTPClient: Sendable {
 
         let handler = RequestConnectionHandler(
             connection: conn,
+            responseContentLengthPolicy: config.responseContentLengthPolicy,
             onSuccess: { response in
                 log("Handler received success response: \(response.status.code)")
                 Task {
@@ -95,6 +96,23 @@ public struct HTTPClient: Sendable {
             },
             debug: config.debug
         )
+
+        // let handler = RequestConnectionHandler(
+        //     connection: conn,
+        //     onSuccess: { response in
+        //         log("Handler received success response: \(response.status.code)")
+        //         Task {
+        //             await responseActor.setSuccess(response)
+        //         }
+        //     },
+        //     onError: { error in
+        //         log("Handler received error: \(error)")
+        //         Task {
+        //             await responseActor.setFailure(error)
+        //         }
+        //     },
+        //     debug: config.debug
+        // )
 
         conn.stateUpdateHandler = { state in
             log("Connection state: \(state)")

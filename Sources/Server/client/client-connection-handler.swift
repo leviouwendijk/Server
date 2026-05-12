@@ -9,14 +9,17 @@ final class RequestConnectionHandler: @unchecked Sendable {
     private let onError: (ServerError) -> Void
     private var finished = false
     private let debug: Bool
-    
+    private let responseContentLengthPolicy: HTTPContentLengthPolicy
+
     init(
         connection: NWConnection,
+        responseContentLengthPolicy: HTTPContentLengthPolicy = .default,
         onSuccess: @escaping (HTTPResponse) -> Void,
         onError: @escaping (ServerError) -> Void,
         debug: Bool = false
     ) {
         self.connection = connection
+        self.responseContentLengthPolicy = responseContentLengthPolicy
         self.onSuccess = onSuccess
         self.onError = onError
         self.debug = debug
@@ -89,7 +92,26 @@ final class RequestConnectionHandler: @unchecked Sendable {
 
         let headerData = buffer.subdata(in: 0..<headerEnd)
 
-        let contentLength = HTTPResponseParser.extractContentLength(from: headerData) ?? 0
+        let contentLength: Int
+        do {
+            contentLength = try HTTPFraming.extractContentLength(
+                from: headerData,
+                policy: responseContentLengthPolicy
+            ) ?? 0
+        } catch HTTPParsingError.contentLengthTooLarge(let value, let maximumBytes) {
+            log("Response payload too large: Content-Length \(value), maximum \(maximumBytes)")
+            connection.cancel()
+            onError(.responseEncodingFailed)
+            markDone()
+            return
+        } catch {
+            log("Invalid response Content-Length: \(error.localizedDescription)")
+            connection.cancel()
+            onError(.responseEncodingFailed)
+            markDone()
+            return
+        }
+
         log("Parsed Content-Length: \(contentLength)")
 
         let totalNeeded = headerEnd + contentLength
@@ -100,6 +122,19 @@ final class RequestConnectionHandler: @unchecked Sendable {
             return
         }
 
+        // let headerData = buffer.subdata(in: 0..<headerEnd)
+
+        // let contentLength = HTTPResponseParser.extractContentLength(from: headerData) ?? 0
+        // log("Parsed Content-Length: \(contentLength)")
+
+        // let totalNeeded = headerEnd + contentLength
+        // log("Total needed: \(totalNeeded), buffer has: \(buffer.count)")
+
+        // guard buffer.count >= totalNeeded else {
+        //     log("Buffer incomplete, need \(totalNeeded) bytes but only have \(buffer.count)")
+        //     return
+        // }
+
         let responseData = buffer.subdata(in: 0..<totalNeeded)
         let responseText = String(data: responseData, encoding: .utf8) ?? ""
 
@@ -108,15 +143,31 @@ final class RequestConnectionHandler: @unchecked Sendable {
         buffer.removeSubrange(0..<totalNeeded)
 
         do {
-            log("About to parse response text (\(responseText.count) chars):\n\(responseText)")
-            let response = try HTTPResponseParser.parse(responseText)
             log(
-                "Parsed response - status: \(response.status.code), body length: \(response.body.count), body: '\(response.body)'"
+                "About to parse response text (\(responseText.count) chars)"
             )
+
+            let response = try HTTPResponseParser.parse(responseText)
+
+            log(
+                "Parsed response - status: \(response.status.code), body length: \(response.body.count)"
+            )
+
             onSuccess(response)
         } catch {
             onError(.responseEncodingFailed)
         }
+
+        // do {
+        //     log("About to parse response text (\(responseText.count) chars):\n\(responseText)")
+        //     let response = try HTTPResponseParser.parse(responseText)
+        //     log(
+        //         "Parsed response - status: \(response.status.code), body length: \(response.body.count), body: '\(response.body)'"
+        //     )
+        //     onSuccess(response)
+        // } catch {
+        //     onError(.responseEncodingFailed)
+        // }
 
         connection.cancel()
         markDone()

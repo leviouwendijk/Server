@@ -37,7 +37,8 @@ public struct BearerMiddleware: Middleware {
     /// Returns: "STAT_API_KEY"
     /// Then runs the initializer for environment symbol
     public init(config: ServerConfig, realmName: String = "api", suffix: SynthesizedSymbol = .api_key) throws {
-        let symbol = try config.autoSynthesizeTokenSymbol(suffix: suffix)
+        // let symbol = try config.autoSynthesizeTokenSymbol(suffix: suffix)
+        let symbol = try config.synthesize(suffix)
         self.init(symbol: symbol, realmName: realmName)
     }
 

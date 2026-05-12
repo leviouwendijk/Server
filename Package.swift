@@ -13,6 +13,14 @@ let package = Package(
             name: "Server",
             targets: ["Server"]
         ),
+        .executable(
+            name: "servtest",
+            targets: ["ServerTestFlows"]
+        ),
+        .executable(
+            name: "servlive",
+            targets: ["ServerLiveTest"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/leviouwendijk/HTTP.git", branch: "master"),
@@ -25,6 +33,8 @@ let package = Package(
         .package(url: "https://github.com/leviouwendijk/Primitives.git", branch: "master"),
 
         .package(url: "https://github.com/leviouwendijk/Parsers.git", branch: "master"),
+
+        .package(url: "https://github.com/leviouwendijk/TestFlows.git", branch: "master"),
     ],
     targets: [
         .target(
@@ -40,11 +50,25 @@ let package = Package(
                 .product(name: "Primitives", package: "Primitives"),
 
                 .product(name: "Parsers", package: "Parsers"),
+
+                .product(name: "TestFlows", package: "TestFlows"),
             ]
         ),
-        .testTarget(
-            name: "ServerTests",
-            dependencies: ["Server"]
+        .executableTarget(
+            name: "ServerTestFlows",
+            dependencies: [
+                "Server",
+                "HTTP",
+                "TestFlows",
+            ]
+        ),
+        .executableTarget(
+            name: "ServerLiveTest",
+            dependencies: [
+                "Server",
+                "HTTP",
+                // "TestFlows",
+            ]
         ),
     ]
 )

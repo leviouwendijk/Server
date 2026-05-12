@@ -1,10 +1,10 @@
 {
-  "originHash" : "e354cbddbdaf561acc5faa6b561ae766f3e9b9ef93c5b4cae2c1f200e82e66d2",
+  "originHash" : "2deb3b916a9b064eaf0995c117b0de068d893e86ce7afae78fa6804b888bbf83",
   "pins" : [
     {
       "identity" : "ansi",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/ANSI",
+      "location" : "https://github.com/leviouwendijk/ANSI.git",
       "state" : {
         "branch" : "master",
         "revision" : "073d9ca7870b688a312608acf14eae6ba052c0d6"
@@ -43,7 +43,7 @@
       "location" : "https://github.com/leviouwendijk/HTTP.git",
       "state" : {
         "branch" : "master",
-        "revision" : "8cc657d0306daeaa5b192865d6bdc694800a8142"
+        "revision" : "38c9522df68b98823340e48ec0f96afdc7f489ad"
       }
     },
     {
@@ -52,7 +52,7 @@
       "location" : "https://github.com/leviouwendijk/Loggers.git",
       "state" : {
         "branch" : "master",
-        "revision" : "b45d5f21294c7ec06c422dacf4aedb4632a731d6"
+        "revision" : "e4fc51fc8bb3ce93f7e12689358ecaf56f801cf1"
       }
     },
     {
@@ -70,7 +70,7 @@
       "location" : "https://github.com/leviouwendijk/Milieu.git",
       "state" : {
         "branch" : "master",
-        "revision" : "242e890af20eb5f77087cf116ae9374f1f809b2a"
+        "revision" : "61da1601725fd66f5c6ad066dc40ff0cff637d74"
       }
     },
     {
@@ -106,7 +106,7 @@
       "location" : "https://github.com/leviouwendijk/Position.git",
       "state" : {
         "branch" : "master",
-        "revision" : "70fd78230c3452d9a4471222d64324a2c084351d"
+        "revision" : "c80214283130c1bd4fc1c54dd5f3c574e3e4986c"
       }
     },
     {
@@ -115,7 +115,7 @@
       "location" : "https://github.com/leviouwendijk/Primitives.git",
       "state" : {
         "branch" : "master",
-        "revision" : "e112f25245dde3fcc2b87f746a7c090cbe8d2a3b"
+        "revision" : "1682a0cf9c3e921cf08b0fb22beea88013763a32"
       }
     },
     {
@@ -160,7 +160,7 @@
       "location" : "https://github.com/leviouwendijk/TestFlows.git",
       "state" : {
         "branch" : "master",
-        "revision" : "cc6f6216e9c77cf2862c047a4666336cc47d25e8"
+        "revision" : "79b1af3ebd1fe834f2bd0b68642e55f25a261428"
       }
     },
     {
@@ -178,7 +178,7 @@
       "location" : "https://github.com/leviouwendijk/Writers.git",
       "state" : {
         "branch" : "master",
-        "revision" : "68d435e982ad7e144c5600b652368cae77c48044"
+        "revision" : "70e7a40af2a7a444d00126324bd179bf83d3fad7"
       }
     }
   ],

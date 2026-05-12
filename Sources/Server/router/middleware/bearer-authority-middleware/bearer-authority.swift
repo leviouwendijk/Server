@@ -75,7 +75,8 @@ public struct BearerAuthority: Sendable {
         authorized: [String] = [],
         invalidated: [String] = [],
     ) throws {
-        let symbol = try config.autoSynthesizeTokenSymbol(suffix: suffix)
+        // let symbol = try config.autoSynthesizeTokenSymbol(suffix: suffix)
+        let symbol = try config.synthesize(suffix)
 
         var auth_symbols: [String] = []
         auth_symbols.append(symbol)

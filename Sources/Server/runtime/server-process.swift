@@ -20,9 +20,14 @@ public struct ServerProcess: Sendable {
         activity: HTTPActivityCallback? = nil,
         actions: ServerActions = .empty
     ) {
+        let router = Router(
+            routes: routes,
+            methods: config.security.methods
+        )
+
         self.config = config
         self.routes = routes
-        self.router = Router(routes: routes)
+        self.router = router
         self.engine = ServerEngine(
             config: config,
             router: router,

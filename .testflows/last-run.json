@@ -1,0 +1,189 @@
+{
+  "failed" : 0,
+  "failed_names" : [
+
+  ],
+  "generated_at" : "2026-05-11T23:29:57Z",
+  "passed" : 3,
+  "results" : [
+    {
+      "display_name" : "Server preserves connector-v2 style API behavior",
+      "duration_seconds" : 0.0014810562133789062,
+      "name" : "server.api-contract.connector-v2",
+      "status" : "passed",
+      "tags" : [
+        "api-contract",
+        "bearer",
+        "connector-v2",
+        "cors",
+        "regression",
+        "router",
+        "server"
+      ]
+    },
+    {
+      "display_name" : "HTTPRequestParser preserves ordinary request parsing behavior",
+      "duration_seconds" : 0.0003949403762817383,
+      "name" : "http.request-parser.regression",
+      "status" : "passed",
+      "tags" : [
+        "http",
+        "parser-regression",
+        "regression",
+        "request"
+      ]
+    },
+    {
+      "display_name" : "HTTPResponseParser preserves ordinary response parsing behavior",
+      "duration_seconds" : 0.0003249645233154297,
+      "name" : "http.response-parser.regression",
+      "status" : "passed",
+      "tags" : [
+        "http",
+        "parser-regression",
+        "regression",
+        "response"
+      ]
+    },
+    {
+      "display_name" : "Outbound client request CRLF injection is currently possible",
+      "duration_seconds" : 0.0001760721206665039,
+      "name" : "security.outbound.client-request.crlf-injection",
+      "status" : "secured",
+      "tags" : [
+        "characterization",
+        "client",
+        "crlf",
+        "http",
+        "security"
+      ]
+    },
+    {
+      "display_name" : "Outbound response CRLF injection is currently possible",
+      "duration_seconds" : 0.00017499923706054688,
+      "name" : "security.outbound.response.crlf-injection",
+      "status" : "secured",
+      "tags" : [
+        "characterization",
+        "crlf",
+        "http",
+        "response",
+        "security"
+      ]
+    },
+    {
+      "display_name" : "Inbound request parser currently accepts ambiguous or lossy HTTP framing",
+      "duration_seconds" : 0.00017702579498291016,
+      "name" : "security.inbound.request-parser.framing-confusion",
+      "status" : "secured",
+      "tags" : [
+        "characterization",
+        "framing",
+        "http",
+        "parser",
+        "security"
+      ]
+    },
+    {
+      "display_name" : "Content-Length parsing currently accepts unsafe values",
+      "duration_seconds" : 0.00016498565673828125,
+      "name" : "security.inbound.content-length.confusion",
+      "status" : "secured",
+      "tags" : [
+        "characterization",
+        "content-length",
+        "framing",
+        "http",
+        "security"
+      ]
+    },
+    {
+      "display_name" : "Qualify whether Transfer-Encoding request smuggling risks are real",
+      "duration_seconds" : 0.00018596649169921875,
+      "name" : "security.inbound.transfer-encoding-smuggling.qualification",
+      "status" : "secured",
+      "tags" : [
+        "framing",
+        "http",
+        "parser",
+        "qualification",
+        "security",
+        "smuggling",
+        "transfer-encoding"
+      ]
+    },
+    {
+      "display_name" : "Qualify whether duplicate security-sensitive headers collapse unsafely",
+      "duration_seconds" : 0.00019598007202148438,
+      "name" : "security.inbound.duplicate-security-headers.qualification",
+      "status" : "secured",
+      "tags" : [
+        "duplicates",
+        "headers",
+        "http",
+        "qualification",
+        "security"
+      ]
+    },
+    {
+      "display_name" : "Qualify whether credentialed CORS origin reflection is possible",
+      "duration_seconds" : 0.00016009807586669922,
+      "name" : "security.cors.credentials-origin-reflection.qualification",
+      "status" : "secured",
+      "tags" : [
+        "cors",
+        "credentials",
+        "http",
+        "origin",
+        "qualification",
+        "security"
+      ]
+    },
+    {
+      "display_name" : "Qualify whether inbound header resource limits are absent",
+      "duration_seconds" : 0.0048760175704956055,
+      "name" : "security.inbound.header-limits.qualification",
+      "status" : "secured",
+      "tags" : [
+        "dos",
+        "headers",
+        "http",
+        "qualification",
+        "resource-limit",
+        "security"
+      ]
+    },
+    {
+      "display_name" : "Qualify whether TRACE and CONNECT can enter the route layer",
+      "duration_seconds" : 0.000186920166015625,
+      "name" : "security.routing.unsafe-methods.qualification",
+      "status" : "secured",
+      "tags" : [
+        "connect",
+        "http",
+        "methods",
+        "qualification",
+        "routing",
+        "security",
+        "trace"
+      ]
+    },
+    {
+      "display_name" : "Qualify whether ambiguous request targets are accepted unnormalized",
+      "duration_seconds" : 0.00018405914306640625,
+      "name" : "security.routing.request-target-normalization.qualification",
+      "status" : "secured",
+      "tags" : [
+        "http",
+        "normalization",
+        "path",
+        "qualification",
+        "routing",
+        "security"
+      ]
+    }
+  ],
+  "skipped" : 0,
+  "title" : "Server Test Flows",
+  "total" : 13
+}

@@ -24,7 +24,7 @@ public enum RequestKind {
 //         lines.append("") // blank line between headers and body
 //         let headerString = lines.joined(separator: "\r\n")
 //         return headerString + "\r\n" // no body for GET
-
+//
 //     case .post(let path, let bearer, let body, let contentType):
 //         let bodyData = body.data(using: .utf8) ?? Data()
 //         var lines: [String] = []
@@ -43,6 +43,58 @@ public enum RequestKind {
 //     }
 // }
 
+public func buildValidatedWireRequest(
+    host: String,
+    method: HTTPMethod,
+    path: String,
+    headers: [String: String],
+    body: String?
+) throws -> String {
+    try HTTPWireValidation.validateRequestTarget(path)
+    try HTTPWireValidation.validateHeader(
+        name: "Host",
+        value: host
+    )
+
+    var lines: [String] = []
+    lines.append("\(method.rawValue) \(path)")
+    lines.append(
+        try HTTPWireValidation.headerLine(
+            name: "Host",
+            value: host
+        )
+    )
+
+    if let body {
+        let bodyData = body.data(using: .utf8) ?? Data()
+        lines.append(
+            try HTTPWireValidation.headerLine(
+                name: HTTPConstants.contentLengthHeader,
+                value: "\(bodyData.count)"
+            )
+        )
+    }
+
+    let headerLines = try HTTPWireValidation.headerLines(
+        headers.map {
+            ($0.key, $0.value)
+        }
+    )
+
+    lines.append(contentsOf: headerLines)
+    lines.append("")
+
+    let headerString = lines.joined(
+        separator: HTTPConstants.crlf
+    )
+
+    if let body {
+        return headerString + HTTPConstants.crlf + body
+    }
+
+    return headerString + HTTPConstants.crlf
+}
+
 public func buildWireRequest(
     host: String,
     method: HTTPMethod,
@@ -50,25 +102,23 @@ public func buildWireRequest(
     headers: [String: String],
     body: String?
 ) -> String {
-    var lines: [String] = []
-    lines.append("\(method.rawValue) \(path)")
-    lines.append("Host: \(host)")
-    
-    if let body = body {
-        let bodyData = body.data(using: .utf8) ?? Data()
-        lines.append("Content-Length: \(bodyData.count)")
+    do {
+        return try buildValidatedWireRequest(
+            host: host,
+            method: method,
+            path: path,
+            headers: headers,
+            body: body
+        )
+    } catch {
+        return fallbackWireRequest()
     }
-    
-    for (key, value) in headers {
-        lines.append("\(key): \(value)")
-    }
-    
-    lines.append("")
-    let headerString = lines.joined(separator: "\r\n")
-    
-    if let body = body {
-        return headerString + "\r\n" + body
-    } else {
-        return headerString + "\r\n"
-    }
+}
+
+private func fallbackWireRequest() -> String {
+    [
+        "GET /",
+        "Host: invalid.local",
+        "",
+    ].joined(separator: HTTPConstants.crlf) + HTTPConstants.crlf
 }
