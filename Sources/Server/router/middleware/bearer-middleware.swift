@@ -80,34 +80,84 @@ public struct BearerMiddleware: Middleware {
         provided: String?,
         bearerRealm: String = "api"
     ) -> (AuthorizationStatus, HTTPResponse) {
-        let status: AuthorizationStatus
-        let response: HTTPResponse
+        guard let expected else {
+            let status = AuthorizationStatus.misconfigured
 
-        if expected == nil {
-            status = .misconfigured
-            response = .unauthorized(
-                body: status.body,
-                bearerRealm: bearerRealm
+            return (
+                status,
+                .unauthorized(
+                    body: status.body,
+                    bearerRealm: bearerRealm
+                )
             )
-        } else if provided == nil {
-            status = .missing
-            response = .unauthorized(
-                body: status.body,
-                bearerRealm: bearerRealm
-            )
-        } else if !(provided == expected) {
-            status = .invalid
-            response = .unauthorized(
-                body: status.body,
-                bearerError: status.bearerError
-            )
-        } else {
-            status = .authorized
-            response = .ok()
         }
 
-        return (status, response)
+        guard let provided else {
+            let status = AuthorizationStatus.missing
+
+            return (
+                status,
+                .unauthorized(
+                    body: status.body,
+                    bearerRealm: bearerRealm
+                )
+            )
+        }
+
+        guard ServerConstantTime.equals(
+            provided,
+            expected
+        ) else {
+            let status = AuthorizationStatus.invalid
+
+            return (
+                status,
+                .unauthorized(
+                    body: status.body,
+                    bearerError: status.bearerError
+                )
+            )
+        }
+
+        return (
+            .authorized,
+            .ok()
+        )
     }
+
+    // internal static func authenticate(
+    //     expected: String?,
+    //     provided: String?,
+    //     bearerRealm: String = "api"
+    // ) -> (AuthorizationStatus, HTTPResponse) {
+    //     let status: AuthorizationStatus
+    //     let response: HTTPResponse
+
+    //     if expected == nil {
+    //         status = .misconfigured
+    //         response = .unauthorized(
+    //             body: status.body,
+    //             bearerRealm: bearerRealm
+    //         )
+    //     } else if provided == nil {
+    //         status = .missing
+    //         response = .unauthorized(
+    //             body: status.body,
+    //             bearerRealm: bearerRealm
+    //         )
+    //     } else if !(provided == expected) {
+    //         status = .invalid
+    //         response = .unauthorized(
+    //             body: status.body,
+    //             bearerError: status.bearerError
+    //         )
+    //     } else {
+    //         status = .authorized
+    //         response = .ok()
+    //     }
+
+    //     return (status, response)
+    // }
     
     public func handle(
         _ request: HTTPRequest,

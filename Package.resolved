@@ -1,5 +1,5 @@
 {
-  "originHash" : "2deb3b916a9b064eaf0995c117b0de068d893e86ce7afae78fa6804b888bbf83",
+  "originHash" : "db88f01305b1256845513eb3883bfac5896ea35d76e6b0c7f5dfef9a1a762527",
   "pins" : [
     {
       "identity" : "ansi",
@@ -43,7 +43,7 @@
       "location" : "https://github.com/leviouwendijk/HTTP.git",
       "state" : {
         "branch" : "master",
-        "revision" : "38c9522df68b98823340e48ec0f96afdc7f489ad"
+        "revision" : "ef0bb341d72c920db52bf9a6c7494d4f56de3ceb"
       }
     },
     {

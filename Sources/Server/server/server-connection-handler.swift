@@ -369,15 +369,25 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 )
             )
         } catch HTTPParsingError.forbiddenHeader(let name) {
+            log(
+                "Forbidden request header rejected: \(name)",
+                level: .debug
+            )
+
             sendHTTPResponse(
                 HTTPResponse.badRequest(
-                    body: "Forbidden request header: \(name)"
+                    body: "Forbidden request header"
                 )
             )
         } catch {
+            log(
+                "Invalid request rejected: \(error.localizedDescription)",
+                level: .debug
+            )
+
             sendHTTPResponse(
                 HTTPResponse.badRequest(
-                    body: "Invalid request: \(error.localizedDescription)"
+                    body: "Invalid request"
                 )
             )
         }

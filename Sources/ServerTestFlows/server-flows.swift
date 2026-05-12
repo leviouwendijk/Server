@@ -19,6 +19,9 @@ enum ServerSecurityFlows: TestFlowRegistry {
         corsCredentialReflectionQualification,
         inboundHeaderLimitQualification,
         unsafeMethodQualification,
-        requestTargetNormalizationQualification
+        requestTargetNormalizationQualification,
+
+        runtimeHardeningQualification,
+        bearerTokenComparisonRegression
     ]
 }
