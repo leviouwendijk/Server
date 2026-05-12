@@ -3,12 +3,12 @@
   "failed_names" : [
 
   ],
-  "generated_at" : "2026-05-12T01:05:59Z",
+  "generated_at" : "2026-05-12T17:51:47Z",
   "passed" : 4,
   "results" : [
     {
       "display_name" : "Server preserves connector-v2 style API behavior",
-      "duration_seconds" : 0.0044449567794799805,
+      "duration_seconds" : 0.005262970924377441,
       "name" : "server.api-contract.connector-v2",
       "status" : "passed",
       "tags" : [
@@ -23,7 +23,7 @@
     },
     {
       "display_name" : "HTTPRequestParser preserves ordinary request parsing behavior",
-      "duration_seconds" : 0.0009839534759521484,
+      "duration_seconds" : 0.0004839897155761719,
       "name" : "http.request-parser.regression",
       "status" : "passed",
       "tags" : [
@@ -35,7 +35,7 @@
     },
     {
       "display_name" : "HTTPResponseParser preserves ordinary response parsing behavior",
-      "duration_seconds" : 0.0007270574569702148,
+      "duration_seconds" : 0.0005609989166259766,
       "name" : "http.response-parser.regression",
       "status" : "passed",
       "tags" : [
@@ -47,7 +47,7 @@
     },
     {
       "display_name" : "Outbound client request CRLF injection is currently possible",
-      "duration_seconds" : 0.0004439353942871094,
+      "duration_seconds" : 0.00019407272338867188,
       "name" : "security.outbound.client-request.crlf-injection",
       "status" : "secured",
       "tags" : [
@@ -60,7 +60,7 @@
     },
     {
       "display_name" : "Outbound response CRLF injection is currently possible",
-      "duration_seconds" : 0.00027489662170410156,
+      "duration_seconds" : 0.0001710653305053711,
       "name" : "security.outbound.response.crlf-injection",
       "status" : "secured",
       "tags" : [
@@ -73,7 +73,7 @@
     },
     {
       "display_name" : "Inbound request parser currently accepts ambiguous or lossy HTTP framing",
-      "duration_seconds" : 0.00023496150970458984,
+      "duration_seconds" : 0.0001780986785888672,
       "name" : "security.inbound.request-parser.framing-confusion",
       "status" : "secured",
       "tags" : [
@@ -86,7 +86,7 @@
     },
     {
       "display_name" : "Content-Length parsing currently accepts unsafe values",
-      "duration_seconds" : 0.00021004676818847656,
+      "duration_seconds" : 0.0001710653305053711,
       "name" : "security.inbound.content-length.confusion",
       "status" : "secured",
       "tags" : [
@@ -99,7 +99,7 @@
     },
     {
       "display_name" : "Qualify whether Transfer-Encoding request smuggling risks are real",
-      "duration_seconds" : 0.0002410411834716797,
+      "duration_seconds" : 0.00019109249114990234,
       "name" : "security.inbound.transfer-encoding-smuggling.qualification",
       "status" : "secured",
       "tags" : [
@@ -114,7 +114,7 @@
     },
     {
       "display_name" : "Qualify whether duplicate security-sensitive headers collapse unsafely",
-      "duration_seconds" : 0.0002269744873046875,
+      "duration_seconds" : 0.00019693374633789062,
       "name" : "security.inbound.duplicate-security-headers.qualification",
       "status" : "secured",
       "tags" : [
@@ -127,7 +127,7 @@
     },
     {
       "display_name" : "Qualify whether credentialed CORS origin reflection is possible",
-      "duration_seconds" : 0.00017499923706054688,
+      "duration_seconds" : 0.00016701221466064453,
       "name" : "security.cors.credentials-origin-reflection.qualification",
       "status" : "secured",
       "tags" : [
@@ -141,7 +141,7 @@
     },
     {
       "display_name" : "Qualify whether inbound header resource limits are absent",
-      "duration_seconds" : 0.0054149627685546875,
+      "duration_seconds" : 0.0046149492263793945,
       "name" : "security.inbound.header-limits.qualification",
       "status" : "secured",
       "tags" : [
@@ -155,7 +155,7 @@
     },
     {
       "display_name" : "Qualify whether TRACE and CONNECT can enter the route layer",
-      "duration_seconds" : 0.00028002262115478516,
+      "duration_seconds" : 0.00026595592498779297,
       "name" : "security.routing.unsafe-methods.qualification",
       "status" : "secured",
       "tags" : [
@@ -170,7 +170,7 @@
     },
     {
       "display_name" : "Qualify whether ambiguous request targets are accepted unnormalized",
-      "duration_seconds" : 0.00021195411682128906,
+      "duration_seconds" : 0.00020503997802734375,
       "name" : "security.routing.request-target-normalization.qualification",
       "status" : "secured",
       "tags" : [
@@ -184,7 +184,7 @@
     },
     {
       "display_name" : "Qualify runtime hardening gaps around route exposure and forwarded headers",
-      "duration_seconds" : 0.00026094913482666016,
+      "duration_seconds" : 0.0002789497375488281,
       "name" : "security.runtime-hardening.qualification",
       "status" : "secured",
       "tags" : [
@@ -198,7 +198,7 @@
     },
     {
       "display_name" : "Bearer token comparison preserves auth semantics through constant-time helper",
-      "duration_seconds" : 0.00019693374633789062,
+      "duration_seconds" : 0.0002199411392211914,
       "name" : "security.auth.bearer-token-comparison.regression",
       "status" : "passed",
       "tags" : [
