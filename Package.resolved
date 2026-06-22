@@ -43,7 +43,7 @@
       "location" : "https://github.com/leviouwendijk/HTTP.git",
       "state" : {
         "branch" : "master",
-        "revision" : "ef574484b482428d0e304d5fdb5c7f0d0ce621df"
+        "revision" : "de4b1b78762f759a14d4e672f5ed8909e68e042f"
       }
     },
     {
@@ -79,7 +79,7 @@
       "location" : "https://github.com/leviouwendijk/Parsers.git",
       "state" : {
         "branch" : "master",
-        "revision" : "272e335ae717b9a084b182348b590dce0066ef31"
+        "revision" : "33da592f40da42fd3b85e39d56f38a7b25e95945"
       }
     },
     {
