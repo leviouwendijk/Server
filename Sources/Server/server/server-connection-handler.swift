@@ -308,14 +308,14 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 requestTargetPolicy: config.security.target
             )
 
-            guard config.security.methods.contains(request.method) else {
-                sendHTTPResponse(
-                    HTTPResponse.methodNotAllowed(
-                        body: "Method \(request.method.rawValue) is disabled by server policy"
-                    )
-                )
-                return
-            }
+            // guard config.security.methods.contains(request.method) else {
+            //     sendHTTPResponse(
+            //         HTTPResponse.methodNotAllowed(
+            //             body: "Method \(request.method.rawValue) is disabled by server policy"
+            //         )
+            //     )
+            //     return
+            // }
 
             let callback = activityCallback
 
@@ -325,7 +325,11 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 }
 
                 let startedAt = Date()
-                let response = await self.router.route(request)
+                // let response = await self.router.route(request)
+                let result = await self.router.observed(
+                    request
+                )
+                let response = result.response
                 let finishedAt = Date()
 
                 if let callback {
@@ -338,7 +342,10 @@ final class ServerConnectionHandler: @unchecked Sendable {
                         clientDescription: String(describing: connection.endpoint),
                         requestId: request.header("X-Request-Id"),
                         userAgent: request.header("User-Agent"),
-                        duration: finishedAt.timeIntervalSince(startedAt)
+                        duration: finishedAt.timeIntervalSince(startedAt),
+                        routePattern: result.pattern,
+                        responseBytes: response.body.utf8.count,
+                        failure: response.failure
                     )
 
                     callback(event)

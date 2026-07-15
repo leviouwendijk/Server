@@ -34,7 +34,7 @@
       "location" : "https://github.com/leviouwendijk/FileTypes.git",
       "state" : {
         "branch" : "master",
-        "revision" : "77d9b8387e7df863e66dd4665a6f5181365ffe0d"
+        "revision" : "f0c1d8bf5beda0de51c9e95b687fbdec9e4ce7b0"
       }
     },
     {
@@ -43,7 +43,7 @@
       "location" : "https://github.com/leviouwendijk/HTTP.git",
       "state" : {
         "branch" : "master",
-        "revision" : "de4b1b78762f759a14d4e672f5ed8909e68e042f"
+        "revision" : "a9b20b861847d6e8fa6aa69e22792dbbe696b938"
       }
     },
     {
@@ -79,7 +79,7 @@
       "location" : "https://github.com/leviouwendijk/Parsers.git",
       "state" : {
         "branch" : "master",
-        "revision" : "33da592f40da42fd3b85e39d56f38a7b25e95945"
+        "revision" : "a0ede24496d5951f734389590ff5a860ec055035"
       }
     },
     {
@@ -115,7 +115,7 @@
       "location" : "https://github.com/leviouwendijk/Primitives.git",
       "state" : {
         "branch" : "master",
-        "revision" : "9c07dc28206dddc67bb0052a84aaecf803a55f67"
+        "revision" : "eb58bcd1ea305d13ff0c0f6fcd03d869a8612802"
       }
     },
     {
