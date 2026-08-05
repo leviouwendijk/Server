@@ -5,6 +5,7 @@ enum ServerSecurityFlows: TestFlowRegistry {
 
     static let flows: [TestFlow] = [
         serverAPIContractFlow,
+        serverRequestContextFlow,
 
         httpRequestParserRegressionFlow,
         httpResponseParserRegressionFlow,
