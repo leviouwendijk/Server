@@ -9,17 +9,17 @@ final class RequestConnectionHandler: @unchecked Sendable {
     private let onError: (ServerError) -> Void
     private var finished = false
     private let debug: Bool
-    private let responseContentLengthPolicy: HTTPContentLengthPolicy
+    private let policies: HTTPResponsePolicies
 
     init(
         connection: NWConnection,
-        responseContentLengthPolicy: HTTPContentLengthPolicy = .default,
+        policies: HTTPResponsePolicies = HTTPPolicies.response.default,
         onSuccess: @escaping (HTTPResponse) -> Void,
         onError: @escaping (ServerError) -> Void,
         debug: Bool = false
     ) {
         self.connection = connection
-        self.responseContentLengthPolicy = responseContentLengthPolicy
+        self.policies = policies
         self.onSuccess = onSuccess
         self.onError = onError
         self.debug = debug
@@ -61,9 +61,62 @@ final class RequestConnectionHandler: @unchecked Sendable {
                 return
             }
             
-            if let data = data, !data.isEmpty {
-                self.log("Appending \(data.count) bytes to buffer (total: \(self.buffer.count + data.count))")
+            // if let data = data, !data.isEmpty {
+            //     self.log("Appending \(data.count) bytes to buffer (total: \(self.buffer.count + data.count))")
+            //     self.buffer.append(data)
+            //     self.processBuffer()
+            // }
+
+            if let data,
+               !data.isEmpty {
+                self.log(
+                    "Appending \(data.count) bytes to buffer (total: \(self.buffer.count + data.count))"
+                )
+
                 self.buffer.append(data)
+
+                let marker = Data(
+                    HTTPConstants.crlfCrLf.utf8
+                )
+
+                let headermax =
+                    policies.headers.maximumHeaderBytes
+
+                if let range = self.buffer.range(
+                    of: marker
+                ) {
+                    guard range.lowerBound <= headermax else {
+                        self.log(
+                            "Response header exceeded configured maximum"
+                        )
+
+                        self.connection.cancel()
+                        self.onError(
+                            .responseEncodingFailed
+                        )
+                        self.markDone()
+
+                        return
+                    }
+                } else {
+                    let bufferedmax =
+                        headermax + marker.count - 1
+
+                    guard self.buffer.count <= bufferedmax else {
+                        self.log(
+                            "Unterminated response header exceeded configured maximum"
+                        )
+
+                        self.connection.cancel()
+                        self.onError(
+                            .responseEncodingFailed
+                        )
+                        self.markDone()
+
+                        return
+                    }
+                }
+
                 self.processBuffer()
             }
             
@@ -96,7 +149,7 @@ final class RequestConnectionHandler: @unchecked Sendable {
         do {
             contentLength = try HTTPFraming.extractContentLength(
                 from: headerData,
-                policy: responseContentLengthPolicy
+                policy: policies.content
             ) ?? 0
         } catch HTTPParsingError.contentLengthTooLarge(let value, let maximumBytes) {
             log("Response payload too large: Content-Length \(value), maximum \(maximumBytes)")
@@ -147,7 +200,11 @@ final class RequestConnectionHandler: @unchecked Sendable {
                 "About to parse response text (\(responseText.count) chars)"
             )
 
-            let response = try HTTPResponseParser.parse(responseText)
+            // let response = try HTTPResponseParser.parse(responseText)
+            let response = try HTTPResponseParser.parse(
+                responseText,
+                headerPolicy: policies.headers
+            )
 
             log(
                 "Parsed response - status: \(response.status.code), body length: \(response.body.count)"

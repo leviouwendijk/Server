@@ -69,29 +69,41 @@ public struct HTTPClient: Sendable {
             allHeaders[key] = value
         }
         
-        let wireRequest = buildWireRequest(
+        let wire = try buildWireRequest(
             host: config.host,
             method: method,
             path: path,
             headers: allHeaders,
             body: body
         )
-        
-        log("Wire request:\n\(wireRequest.prefix(300))")
+
+        log(
+            "Prepared \(method.rawValue) request (\(wire.utf8.count) bytes)"
+        )
 
         let handler = RequestConnectionHandler(
             connection: conn,
-            responseContentLengthPolicy: config.responseContentLengthPolicy,
+            policies: config.policies,
             onSuccess: { response in
-                log("Handler received success response: \(response.status.code)")
+                log(
+                    "Handler received success response: \(response.status.code)"
+                )
+
                 Task {
-                    await responseActor.setSuccess(response)
+                    await responseActor.setSuccess(
+                        response
+                    )
                 }
             },
             onError: { error in
-                log("Handler received error: \(error)")
+                log(
+                    "Handler received error: \(error)"
+                )
+
                 Task {
-                    await responseActor.setFailure(error)
+                    await responseActor.setFailure(
+                        error
+                    )
                 }
             },
             debug: config.debug
@@ -119,7 +131,9 @@ public struct HTTPClient: Sendable {
             switch state {
             case .ready:
                 log("Connection ready, handler sending request")
-                handler.send(wireRequest)
+                handler.send(
+                    wire
+                )
             case .failed(let error):
                 log("Connection failed: \(error.localizedDescription)")
                 Task {

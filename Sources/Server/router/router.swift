@@ -4,22 +4,46 @@ import HTTP
 public struct Router: Sendable {
     public let routes: [Route]
     public let methods: Set<HTTPMethod>
+    public let json: ServerJSONPolicy
 
     public init(
         methods: Set<HTTPMethod> = HTTPMethod.defaultServerAllowed,
+        json: ServerJSONPolicy = .default,
         @RouteBuilder _ builder: () -> [Route]
     ) {
         self.routes = builder()
         self.methods = methods
+        self.json = json
     }
 
     public init(
         routes: [Route],
-        methods: Set<HTTPMethod> = HTTPMethod.defaultServerAllowed
+        methods: Set<HTTPMethod> = HTTPMethod.defaultServerAllowed,
+        json: ServerJSONPolicy = .default
     ) {
         self.routes = routes
         self.methods = methods
+        self.json = json
     }
+// public struct Router: Sendable {
+//     public let routes: [Route]
+//     public let methods: Set<HTTPMethod>
+
+//     public init(
+//         methods: Set<HTTPMethod> = HTTPMethod.defaultServerAllowed,
+//         @RouteBuilder _ builder: () -> [Route]
+//     ) {
+//         self.routes = builder()
+//         self.methods = methods
+//     }
+
+//     public init(
+//         routes: [Route],
+//         methods: Set<HTTPMethod> = HTTPMethod.defaultServerAllowed
+//     ) {
+//         self.routes = routes
+//         self.methods = methods
+//     }
 
     public func route(
         _ request: HTTPRequest
@@ -94,11 +118,42 @@ public struct Router: Sendable {
             }
         }
 
-        return await handler(
-            request,
-            self
-        )
+        let policy = route.jsonPolicy ?? json
+
+        return await HTTPJSONCoding.$current.withValue(
+            policy.coding
+        ) {
+            await handler(
+                request,
+                self
+            )
+        }
     }
+
+    // func run(
+    //     _ route: Route,
+    //     _ request: HTTPRequest
+    // ) async -> HTTPResponse {
+    //     var handler = route.handler
+
+    //     for middleware in route.middleware.reversed() {
+    //         let next = handler
+    //         let middleware = middleware
+
+    //         handler = { request, router in
+    //             await middleware.handle(
+    //                 request,
+    //                 router,
+    //                 next: next
+    //             )
+    //         }
+    //     }
+
+    //     return await handler(
+    //         request,
+    //         self
+    //     )
+    // }
 
     public func listRoutes() -> RouteList {
         RouteList(

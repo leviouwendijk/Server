@@ -17,7 +17,10 @@ struct App {
                     config: command.config,
                     routes: try routes(),
                     logger: logger,
-                    activity: activity
+                    activity:
+                        command.noActivity
+                        ? nil
+                        : activity
                 )
 
                 await logger?.log(
@@ -25,12 +28,25 @@ struct App {
                     level: .info
                 )
 
-                await process.run()
+                // await process.run()
+                try await process.throwing.run()
 
             case .test:
                 let ok = await ServerLiveClient.run(
                     config: command.config,
                     baseURL: command.baseURL
+                )
+
+                Foundation.exit(
+                    ok ? 0 : 1
+                )
+
+            case .bench:
+                let ok = await ServerLiveBenchmark.run(
+                    config: command.config,
+                    baseURL: command.baseURL,
+                    options: command.benchmark,
+                    selfHosted: command.selfHostedBenchmark
                 )
 
                 Foundation.exit(

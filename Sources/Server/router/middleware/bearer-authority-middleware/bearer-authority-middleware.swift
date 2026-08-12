@@ -34,12 +34,12 @@ public struct BearerAuthorityMiddleware: Middleware {
             switch self {
             case .authorized:
                 return ""
+
             case .missing:
                 return "Missing or invalid Authorization header."
-            case .invalid:
-                return "Invalid API token"
-            case .expired:
-                return "Expired token"
+
+            case .invalid, .expired:
+                return "Invalid or expired API token"
             }
         }
 

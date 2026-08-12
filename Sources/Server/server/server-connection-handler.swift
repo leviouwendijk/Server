@@ -4,36 +4,102 @@ import HTTP
 import Loggers
 
 final class ServerConnectionHandler: @unchecked Sendable {
+    private enum ReadPhase: Sendable, Equatable {
+        case idle
+        case headers
+        case content
+    }
+
     private let connection: NWConnection
     private let router: Router
     private let config: ServerConfig
     private let statusRegistry: HTTPStatusRegistry
+    private let queue: DispatchQueue
+
     private var buffer = Data()
+    private var requestTail: Task<Void, Never>?
+
     private let activityCallback: HTTPActivityCallback?
+    private let id: UUID
+    private let onTermination: @Sendable (UUID) -> Void
+
+    private var pendingOperations = 0
+    private var readPhase: ReadPhase = .idle
+    private var timeoutGeneration = 0
+    private var timeoutTask: Task<Void, Never>?
+    private var closing = false
+    private var didTerminate = false
     
     init(
+        id: UUID,
         connection: NWConnection,
         router: Router,
         config: ServerConfig,
         statusRegistry: HTTPStatusRegistry,
+        onTermination: @escaping @Sendable (UUID) -> Void,
         activityCallback: HTTPActivityCallback? = nil
     ) {
+        let queue = DispatchQueue(
+            label: "server.connection.\(UUID().uuidString)"
+        )
+
+        self.id = id
         self.connection = connection
         self.router = router
         self.config = config
         self.statusRegistry = statusRegistry
+        self.onTermination = onTermination
         self.activityCallback = activityCallback
+        self.queue = queue
 
-        connection.start(queue: DispatchQueue(label: "server.connection.\(UUID().uuidString)"))
+        connection.stateUpdateHandler = { [weak self] state in
+            guard let self else {
+                return
+            }
+
+            switch state {
+            case .ready:
+                self.armIdleTimeoutIfPossible()
+
+            case .failed(_),
+                 .cancelled:
+                self.finish()
+
+            default:
+                break
+            }
+        }
+
+        connection.start(
+            queue: queue
+        )
+
         startReceiveLoop()
     }
 
+    package func pendingOperationCount() async -> Int {
+        await withCheckedContinuation { continuation in
+            queue.async { [weak self] in
+                continuation.resume(
+                    returning: self?.pendingOperations ?? 0
+                )
+            }
+        }
+    }
+
     private func startReceiveLoop() {
+        guard !closing,
+              pendingOperations == 0
+        else {
+            return
+        }
         connection.receive(
             minimumIncompleteLength: 1,
             maximumLength: 65536
         ) { [weak self] data, _, isComplete, error in
-            guard let self else {
+            guard let self,
+                  !self.closing
+            else {
                 return
             }
 
@@ -42,83 +108,69 @@ final class ServerConnectionHandler: @unchecked Sendable {
                     "Receive error: \(error)",
                     level: .error
                 )
+
                 self.connection.cancel()
                 return
             }
 
             if let data,
                !data.isEmpty {
-                self.buffer.append(data)
+                if self.buffer.isEmpty,
+                   self.readPhase == .idle {
+                    self.beginHeadersIfNeeded()
+                }
+
+                self.buffer.append(
+                    data
+                )
 
                 let marker = Data(
                     HTTPConstants.crlfCrLf.utf8
                 )
 
-                if self.buffer.range(of: marker) == nil,
-                   self.buffer.count > self.config.limits.headers.maximumHeaderBytes {
+                if self.buffer.range(
+                    of: marker
+                ) == nil,
+                   self.buffer.count
+                    > self.config.limits.headers.maximumHeaderBytes {
                     self.log(
                         "Header section exceeded maximum before terminator",
                         level: .debug
                     )
 
-                    self.sendHTTPResponse(
+                    self.enqueueResponse(
                         HTTPResponse(
                             status: .requestHeaderFieldsTooLarge,
                             body: "Request Header Fields Too Large"
-                        )
+                        ),
+                        closeAfterSend: true
                     )
 
-                    self.connection.cancel()
                     return
                 }
 
-                self.processBuffer()
+                guard self.processBuffer() else {
+                    return
+                }
             }
 
             if isComplete {
-                self.connection.cancel()
+                self.closing = true
+
+                self.cancelTimeout()
+
+                self.enqueueRequest { [weak self] in
+                    self?.connection.cancel()
+                }
+
                 return
             }
 
             self.startReceiveLoop()
         }
     }
-    
-    // private func startReceiveLoop() {
-    //     connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
-    //         guard let self = self else { return }
-            
-    //         if let error = error {
-    //             self.log("Receive error: \(error)", level: .error)
-    //             self.connection.cancel()
-    //             return
-    //         }
-            
-    //         if let data = data, !data.isEmpty {
-    //             self.buffer.append(data)
-    //             self.processBuffer()
-    //         }
-            
-    //         if isComplete {
-    //             self.connection.cancel()
-    //             return
-    //         }
-            
-    //         self.startReceiveLoop()
-    //     }
-    // }
-    
-    // private func processBuffer() {
-    //     while let messageData = buffer.readLengthPrefixedMessage() {
-    //         if let text = String(data: messageData, encoding: .utf8) {
-    //             handleText(text)
-    //         } else {
-    //             log("Received binary data (\(messageData.count) bytes)", level: .debug)
-    //         }
-    //     }
-    // }
 
-    private func processBuffer() {
+    private func processBuffer() -> Bool {
         log(
             "processBuffer called, buffer size: \(buffer.count)",
             level: .debug
@@ -128,170 +180,246 @@ final class ServerConnectionHandler: @unchecked Sendable {
             HTTPConstants.crlfCrLf.utf8
         )
 
-        guard let range = buffer.range(of: marker) else {
-            log(
-                "HTTP terminator not found",
-                level: .debug
-            )
-            return
-        }
-
-        let headerEnd = range.upperBound
-
-        guard headerEnd <= config.limits.headers.maximumHeaderBytes else {
-            log(
-                "Header section too large: \(headerEnd)",
-                level: .debug
-            )
-
-            sendHTTPResponse(
-                HTTPResponse(
-                    status: .requestHeaderFieldsTooLarge,
-                    body: "Request Header Fields Too Large"
+        while true {
+            guard let range = buffer.range(
+                of: marker
+            ) else {
+                log(
+                    "HTTP terminator not found",
+                    level: .debug
                 )
-            )
 
-            connection.cancel()
-            return
-        }
+                if !buffer.isEmpty {
+                    beginHeadersIfNeeded()
+                }
 
-        log(
-            "Found HTTP terminator, headerEnd = \(headerEnd)",
-            level: .debug
-        )
+                return true
+            }
 
-        let headerData = buffer.subdata(
-            in: 0..<headerEnd
-        )
+            let headerEnd = range.upperBound
 
-        let contentLength: Int
-
-        do {
-            contentLength = try HTTPFraming.extractContentLength(
-                from: headerData,
-                policy: config.limits.content
-            ) ?? 0
-        } catch HTTPParsingError.contentLengthTooLarge(let value, let maximumBytes) {
-            log(
-                "Request payload too large: Content-Length \(value), maximum \(maximumBytes)",
-                level: .debug
-            )
-
-            sendHTTPResponse(
-                HTTPResponse(
-                    status: .payloadTooLarge,
-                    body: "Payload Too Large"
+            guard headerEnd <= config.limits.headers.maximumHeaderBytes else {
+                log(
+                    "Header section too large: \(headerEnd)",
+                    level: .debug
                 )
-            )
 
-            connection.cancel()
-            return
-        } catch {
-            log(
-                "Invalid request Content-Length: \(error.localizedDescription)",
-                level: .debug
-            )
-
-            sendHTTPResponse(
-                HTTPResponse.badRequest(
-                    body: "Invalid request Content-Length"
+                enqueueResponse(
+                    HTTPResponse(
+                        status: .requestHeaderFieldsTooLarge,
+                        body: "Request Header Fields Too Large"
+                    ),
+                    closeAfterSend: true
                 )
-            )
 
-            connection.cancel()
-            return
-        }
+                return false
+            }
 
-        log(
-            "Parsed Content-Length: \(contentLength)",
-            level: .debug
-        )
-
-        guard contentLength <= Int.max - headerEnd else {
             log(
-                "Invalid request framing: headerEnd + Content-Length would overflow",
+                "Found HTTP terminator, headerEnd = \(headerEnd)",
                 level: .debug
             )
 
-            sendHTTPResponse(
-                HTTPResponse.badRequest(
-                    body: "Invalid request framing"
+            let headerData = buffer.subdata(
+                in: 0..<headerEnd
+            )
+
+            let contentLength: Int
+
+            do {
+                contentLength = try HTTPFraming.extractContentLength(
+                    from: headerData,
+                    policy: config.limits.content
+                ) ?? 0
+            } catch HTTPParsingError.contentLengthTooLarge(
+                let value,
+                let maximumBytes
+            ) {
+                log(
+                    "Request payload too large: Content-Length \(value), maximum \(maximumBytes)",
+                    level: .debug
                 )
-            )
 
-            connection.cancel()
-            return
-        }
+                enqueueResponse(
+                    HTTPResponse(
+                        status: .payloadTooLarge,
+                        body: "Payload Too Large"
+                    ),
+                    closeAfterSend: true
+                )
 
-        let total = headerEnd + contentLength
+                return false
+            } catch {
+                log(
+                    "Invalid request Content-Length: \(error.localizedDescription)",
+                    level: .debug
+                )
 
-        log(
-            "Total needed: \(total), buffer has: \(buffer.count)",
-            level: .debug
-        )
+                enqueueResponse(
+                    HTTPResponse.badRequest(
+                        body: "Invalid request Content-Length"
+                    ),
+                    closeAfterSend: true
+                )
 
-        guard buffer.count >= total else {
+                return false
+            }
+
             log(
-                "Buffer incomplete, waiting for more data",
+                "Parsed Content-Length: \(contentLength)",
                 level: .debug
             )
-            return
+
+            guard contentLength <= Int.max - headerEnd else {
+                log(
+                    "Invalid request framing: headerEnd + Content-Length would overflow",
+                    level: .debug
+                )
+
+                enqueueResponse(
+                    HTTPResponse.badRequest(
+                        body: "Invalid request framing"
+                    ),
+                    closeAfterSend: true
+                )
+
+                return false
+            }
+
+            let total =
+                headerEnd + contentLength
+
+            log(
+                "Total needed: \(total), buffer has: \(buffer.count)",
+                level: .debug
+            )
+
+            guard buffer.count >= total else {
+                log(
+                    "Buffer incomplete, waiting for more data",
+                    level: .debug
+                )
+
+                beginContentIfNeeded()
+
+                return true
+            }
+
+            let requestData = buffer.subdata(
+                in: 0..<total
+            )
+
+            let requestText = String(
+                data: requestData,
+                encoding: .utf8
+            ) ?? ""
+
+            log(
+                "Extracted complete request (\(requestText.count) chars)",
+                level: .debug
+            )
+
+            buffer.removeSubrange(
+                0..<total
+            )
+
+            handleText(
+                requestText
+            )
+
+            guard !closing else {
+                return false
+            }
+
+            finishReadPhase()
+
+            return false
         }
-
-        let requestData = buffer.subdata(
-            in: 0..<total
-        )
-
-        let requestText = String(
-            data: requestData,
-            encoding: .utf8
-        ) ?? ""
-
-        log(
-            "Extracted complete request (\(requestText.count) chars)",
-            level: .debug
-        )
-
-        buffer.removeSubrange(
-            0..<total
-        )
-
-        handleText(requestText)
     }
 
-    // private func processBuffer() {
-    //     log("processBuffer called, buffer size: \(buffer.count)", level: .debug)
+    private func activityPath(
+        _ path: String
+    ) -> String {
+        guard let query = path.firstIndex(
+            of: "?"
+        ) else {
+            return path
+        }
 
-    //     let httpTerminator = Data("\r\n\r\n".utf8)
+        return String(
+            path[..<query]
+        )
+    }
 
-    //     guard let range = buffer.range(of: httpTerminator) else {
-    //         log("HTTP terminator not found", level: .debug)
-    //         return
-    //     }
+    private func enqueueRequest(
+        _ operation: @escaping @Sendable () async -> Void
+    ) {
+        pendingOperations += 1
 
-    //     let headerEnd = range.upperBound
-    //     log("Found HTTP terminator, headerEnd = \(headerEnd)", level: .debug)
+        if readPhase == .idle {
+            cancelTimeout()
+        }
 
-    //     let headerData = buffer.subdata(in: 0..<headerEnd)
-    //     let contentLength = HTTPRequestParser.extractContentLength(from: headerData) ?? 0
-    //     log("Parsed Content-Length: \(contentLength)", level: .debug)
+        let previous =
+            requestTail
 
-    //     let totalNeeded = headerEnd + contentLength
-    //     log("Total needed: \(totalNeeded), buffer has: \(buffer.count)", level: .debug)
+        let next = Task { [previous, weak self] in
+            if let previous {
+                await previous.value
+            }
 
-    //     guard buffer.count >= totalNeeded else {
-    //         log("Buffer incomplete, waiting for more data", level: .debug)
-    //         return
-    //     }
+            await operation()
 
-    //     let requestData = buffer.subdata(in: 0..<totalNeeded)
-    //     let requestText = String(data: requestData, encoding: .utf8) ?? ""
-    //     log("Extracted complete request (\(requestText.count) chars)", level: .debug)
+            guard let self else {
+                return
+            }
 
-    //     buffer.removeSubrange(0..<totalNeeded)
+            self.queue.async { [weak self] in
+                self?.completeOperation()
+            }
+        }
 
-    //     handleText(requestText)
-    // }
+        requestTail = next
+    }
+
+    private func enqueueResponse(
+        _ response: HTTPResponse,
+        closeAfterSend: Bool = false
+    ) {
+        if closeAfterSend {
+            closing = true
+
+            cancelTimeout()
+        }
+
+        enqueueRequest { [weak self] in
+            guard let self else {
+                return
+            }
+
+            await self.sendHTTPResponse(
+                response,
+                closeAfterSend: closeAfterSend
+            )
+        }
+    }
+
+    private func prepareToClose() async {
+        await withCheckedContinuation {
+            (
+                continuation: CheckedContinuation<Void, Never>
+            ) in
+
+            queue.async { [weak self] in
+                if let self {
+                    self.closing = true
+                    self.cancelTimeout()
+                }
+
+                continuation.resume()
+            }
+        }
+    }
 
     private func handleText(
         _ text: String
@@ -308,72 +436,120 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 requestTargetPolicy: config.security.target
             )
 
-            // guard config.security.methods.contains(request.method) else {
-            //     sendHTTPResponse(
-            //         HTTPResponse.methodNotAllowed(
-            //             body: "Method \(request.method.rawValue) is disabled by server policy"
-            //         )
-            //     )
-            //     return
-            // }
-
             let callback = activityCallback
 
-            Task { [request, callback, weak self] in
+            enqueueRequest { [request, callback, weak self] in
                 guard let self else {
                     return
                 }
 
-                let startedAt = Date()
-                // let response = await self.router.route(request)
-                let result = await self.router.observed(
-                    request
-                )
-                let response = result.response
-                let finishedAt = Date()
+                let startedAt =
+                    Date()
+
+                let execution =
+                    await ServerRouteExecution.observe(
+                        router: self.router,
+                        request: request,
+                        timeout: self.config.timeouts.execution
+                    )
+
+                let result: RouteResult
+                let closeAfterSend: Bool
+
+                switch execution {
+                case .completed(
+                    let completed
+                ):
+                    result = completed
+                    closeAfterSend = false
+
+                case .timedOut:
+                    self.log(
+                        "Route execution deadline reached",
+                        level: .debug
+                    )
+
+                    result = RouteResult(
+                        response: HTTPResponse(
+                            status: .gatewayTimeout,
+                            body: "Gateway Timeout"
+                        ),
+                        pattern: nil,
+                        method: request.method,
+                        synthetic: false
+                    )
+
+                    closeAfterSend = true
+
+                    await self.prepareToClose()
+                }
+
+                let response =
+                    result.response
+
+                let finishedAt =
+                    Date()
 
                 if let callback {
                     let event = HTTPActivityEvent(
-                        serviceName: config.name,
+                        serviceName: self.config.name,
                         timestamp: finishedAt,
                         method: request.method,
-                        path: request.path,
+                        path: self.activityPath(
+                            request.path
+                        ),
                         status: response.status,
-                        clientDescription: String(describing: connection.endpoint),
-                        requestId: request.header("X-Request-Id"),
-                        userAgent: request.header("User-Agent"),
-                        duration: finishedAt.timeIntervalSince(startedAt),
+                        clientDescription: String(
+                            describing: self.connection.endpoint
+                        ),
+                        requestId: request.header(
+                            "X-Request-Id"
+                        ),
+                        userAgent: request.header(
+                            "User-Agent"
+                        ),
+                        duration: finishedAt.timeIntervalSince(
+                            startedAt
+                        ),
                         routePattern: result.pattern,
                         responseBytes: response.body.utf8.count,
                         failure: response.failure
                     )
 
-                    callback(event)
+                    callback(
+                        event
+                    )
                 }
 
-                self.sendHTTPResponse(response)
+                await self.sendHTTPResponse(
+                    response,
+                    closeAfterSend: closeAfterSend
+                )
             }
         } catch HTTPParsingError.headerSectionTooLarge(_),
                 HTTPParsingError.headerLineTooLarge(_, _),
                 HTTPParsingError.tooManyHeaders(_) {
-            sendHTTPResponse(
+            enqueueResponse(
                 HTTPResponse(
                     status: .requestHeaderFieldsTooLarge,
                     body: "Request Header Fields Too Large"
-                )
+                ),
+                closeAfterSend: true
             )
         } catch HTTPParsingError.requestTargetTooLong(_) {
-            sendHTTPResponse(
+            enqueueResponse(
                 HTTPResponse(
                     status: .uriTooLong,
                     body: "URI Too Long"
-                )
+                ),
+                closeAfterSend: true
             )
         } catch HTTPParsingError.ambiguousRequestTarget(_) {
-            sendHTTPResponse(
+            enqueueResponse(
                 HTTPResponse.badRequest(
                     body: "Ambiguous request target"
-                )
+                ),
+                closeAfterSend: true
             )
         } catch HTTPParsingError.forbiddenHeader(let name) {
             log(
@@ -381,10 +557,11 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 level: .debug
             )
 
-            sendHTTPResponse(
+            enqueueResponse(
                 HTTPResponse.badRequest(
                     body: "Forbidden request header"
-                )
+                ),
+                closeAfterSend: true
             )
         } catch {
             log(
@@ -392,80 +569,255 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 level: .debug
             )
 
-            sendHTTPResponse(
+            enqueueResponse(
                 HTTPResponse.badRequest(
                     body: "Invalid request"
-                )
+                ),
+                closeAfterSend: true
             )
         }
     }
 
-    // private func handleText(_ text: String) {
-    //     log("handleText called with \(text.count) bytes", level: .debug)
-    //     log("Request text: \(text.prefix(100))", level: .debug)
+    private func beginHeadersIfNeeded() {
+        guard !closing,
+              readPhase == .idle
+        else {
+            return
+        }
 
-    //     // if text.hasPrefix("GET ") || text.hasPrefix("POST ") {
-    //         do {
-    //             let request = try HTTPRequestParser.parse(text)
+        readPhase = .headers
 
-    //             // let endpointDescription = String(describing: connection.endpoint)
-    //             let callback = self.activityCallback
+        armTimeout(
+            .headers,
+            after: config.timeouts.headers
+        )
+    }
 
-    //             // Task { [request] in
-    //             //     let response = await router.route(request)
-    //             //     self.sendHTTPResponse(response)
-    //             // }
-    //             // return
-    //             Task { [request, callback, weak self] in
-    //                 guard let self else { return }
-    //                 let startedAt = Date()
-    //                 let response = await self.router.route(request)
-    //                 let finishedAt = Date()
+    private func beginContentIfNeeded() {
+        guard !closing,
+              readPhase != .content
+        else {
+            return
+        }
 
-    //                 if let cb = callback {
-    //                     let event = HTTPActivityEvent(
-    //                         serviceName: config.name,
-    //                         timestamp: finishedAt,
-    //                         method: request.method,
-    //                         path: request.path,
-    //                         status: response.status,
-    //                         clientDescription: String(describing: connection.endpoint),
-    //                         requestId: request.header("X-Request-Id"),
-    //                         userAgent: request.header("User-Agent"),
-    //                         duration: finishedAt.timeIntervalSince(startedAt)
-    //                     )
-    //                     cb(event)
-    //                 }
+        readPhase = .content
 
-    //                 self.sendHTTPResponse(response)
-    //             }
-    //             return
-    //         } catch {
-    //             let errorResp = HTTPResponse.badRequest(
-    //                 body: "Invalid request: \(error.localizedDescription)"
-    //             )
-    //             sendHTTPResponse(errorResp)
-    //             return
-    //         }
-    //     // }
+        armTimeout(
+            .content,
+            after: config.timeouts.content
+        )
+    }
 
-    //     // let ack = "server-ack: received \(text.count) bytes"
-    //     // sendPlain(ack)
-    // }
+    private func finishReadPhase() {
+        readPhase = .idle
 
-    private func sendHTTPResponse(_ response: HTTPResponse) {
-        let wire = HTTPResponseBuilder.build(response)
-        log("Sending HTTP response (\(wire.count) bytes)", level: .debug)
-        let payload = Data(wire.utf8)
-        connection.send(
-            content: payload,
-            completion: .contentProcessed { [weak self] error in
-                if let e = error {
-                    self?.log("Send error: \(e)", level: .error)
-                } else {
-                    self?.log("Response sent successfully", level: .debug)
+        cancelTimeout()
+        armIdleTimeoutIfPossible()
+    }
+
+    private func completeOperation() {
+        guard pendingOperations > 0 else {
+            return
+        }
+
+        pendingOperations -= 1
+
+        guard pendingOperations == 0 else {
+            return
+        }
+
+        requestTail = nil
+
+        guard !closing else {
+            return
+        }
+
+        if !buffer.isEmpty {
+            guard processBuffer() else {
+                return
+            }
+        }
+
+        armIdleTimeoutIfPossible()
+
+        startReceiveLoop()
+    }
+
+    private func armIdleTimeoutIfPossible() {
+        guard !closing,
+              readPhase == .idle,
+              buffer.isEmpty,
+              pendingOperations == 0
+        else {
+            return
+        }
+
+        armTimeout(
+            .idle,
+            after: config.timeouts.idle
+        )
+    }
+
+    private func armTimeout(
+        _ phase: ReadPhase,
+        after duration: Duration
+    ) {
+        cancelTimeout()
+
+        timeoutGeneration &+= 1
+
+        let generation =
+            timeoutGeneration
+
+        timeoutTask = Task { [weak self] in
+            do {
+                try await Task.sleep(
+                    for: duration
+                )
+            } catch {
+                return
+            }
+
+            guard !Task.isCancelled,
+                  let self
+            else {
+                return
+            }
+
+            self.queue.async { [weak self] in
+                guard let self,
+                      !self.closing,
+                      self.timeoutGeneration == generation,
+                      self.readPhase == phase
+                else {
+                    return
                 }
-            })
+
+                self.handleTimeout(
+                    phase
+                )
+            }
+        }
+    }
+
+    private func cancelTimeout() {
+        timeoutGeneration &+= 1
+
+        timeoutTask?.cancel()
+        timeoutTask = nil
+    }
+
+    private func handleTimeout(
+        _ phase: ReadPhase
+    ) {
+        guard !closing else {
+            return
+        }
+
+        cancelTimeout()
+
+        switch phase {
+        case .idle:
+            closing = true
+
+            log(
+                "Idle connection timeout reached",
+                level: .debug
+            )
+
+            connection.cancel()
+
+        case .headers:
+            closing = true
+            readPhase = .idle
+
+            buffer.removeAll(
+                keepingCapacity: false
+            )
+
+            log(
+                "Request header timeout reached",
+                level: .debug
+            )
+
+            enqueueResponse(
+                HTTPResponse(
+                    status: .requestTimeout,
+                    body: "Request Timeout"
+                ),
+                closeAfterSend: true
+            )
+
+        case .content:
+            closing = true
+            readPhase = .idle
+
+            buffer.removeAll(
+                keepingCapacity: false
+            )
+
+            log(
+                "Request content timeout reached",
+                level: .debug
+            )
+
+            enqueueResponse(
+                HTTPResponse(
+                    status: .requestTimeout,
+                    body: "Request Timeout"
+                ),
+                closeAfterSend: true
+            )
+        }
+    }
+
+    private func sendHTTPResponse(
+        _ response: HTTPResponse,
+        closeAfterSend: Bool = false
+    ) async {
+        let wire = HTTPResponseBuilder.build(
+            response
+        )
+
+        log(
+            "Sending HTTP response (\(wire.count) bytes)",
+            level: .debug
+        )
+
+        let payload = Data(
+            wire.utf8
+        )
+
+        await withCheckedContinuation {
+            (
+                continuation: CheckedContinuation<Void, Never>
+            ) in
+
+            connection.send(
+                content: payload,
+                completion: .contentProcessed { [weak self] error in
+                    if let self {
+                        if let error {
+                            self.log(
+                                "Send error: \(error)",
+                                level: .error
+                            )
+                        } else {
+                            self.log(
+                                "Response sent successfully",
+                                level: .debug
+                            )
+                        }
+
+                        if closeAfterSend {
+                            self.connection.cancel()
+                        }
+                    }
+
+                    continuation.resume()
+                }
+            )
+        }
     }
 
     private func sendPlain(_ string: String) {
@@ -480,20 +832,24 @@ final class ServerConnectionHandler: @unchecked Sendable {
             })
     }
 
-    // private func sendHTTPResponse(_ response: HTTPResponse) {
-    //     let wire = HTTPResponseBuilder.build(response)
-    //     sendPlain(wire)
-    // }
-    
-    // private func sendPlain(_ string: String) {
-    //     let payload = Data(string.utf8)
-    //     let framed = Data.withLengthPrefix(payload)
-    //     connection.send(content: framed, completion: .contentProcessed { error in
-    //         if let e = error {
-    //             self.log("Send error: \(e)", level: .error)
-    //         }
-    //     })
-    // }
+    func cancel() {
+        connection.cancel()
+    }
+
+    private func finish() {
+        guard !didTerminate else {
+            return
+        }
+
+        didTerminate = true
+        closing = true
+
+        cancelTimeout()
+
+        onTermination(
+            id
+        )
+    }
     
     private func log(_ msg: String, level: LogLevel) {
         if level.rawValue >= config.logLevel.rawValue {

@@ -1,0 +1,28 @@
+ServerLive Benchmark
+====================
+
+source: self-hosted
+base: http://127.0.0.1:54454
+method: GET
+paths: /_benchmark
+requests: 10000
+concurrency: 256
+timeout: 5.00s
+server max connections: unbounded
+
+====================
+
+duration: 6.99s
+requests/sec: 1430.22
+network failures: 0
+HTTP failures: 0
+
+status:
+    200: 10000
+
+latency ms:
+    min: 3.67
+    p50: 123.80
+    p95: 259.16
+    p99: 1655.33
+    max: 1657.01

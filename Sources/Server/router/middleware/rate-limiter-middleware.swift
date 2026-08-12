@@ -30,31 +30,78 @@ public actor GlobalRateLimiter: Sendable {
 // Per-user rate limiter (keyed by header value)
 public actor PerUserRateLimiter: Sendable {
     private var userRequests: [String: [Date]] = [:]
+
     private let maxRequests: Int
     private let windowSeconds: Int
-    
-    public init(maxRequests: Int, windowSeconds: Int) {
+
+    public init(
+        maxRequests: Int,
+        windowSeconds: Int
+    ) {
         self.maxRequests = maxRequests
         self.windowSeconds = windowSeconds
     }
-    
-    public func recordRequest(for key: String) -> Bool {
+
+    public func recordRequest(
+        for key: String
+    ) -> Bool {
         let now = Date()
-        let windowStart = now.addingTimeInterval(-Double(windowSeconds))
-        
-        if var requests = userRequests[key] {
-            requests.removeAll { $0 < windowStart }
+
+        let windowStart = now.addingTimeInterval(
+            -Double(
+                windowSeconds
+            )
+        )
+
+        prune(
+            through: windowStart
+        )
+
+        var requests =
+            userRequests[key] ?? []
+
+        guard requests.count < maxRequests else {
             userRequests[key] = requests
-        } else {
-            userRequests[key] = []
+            return false
         }
-        
-        if (userRequests[key]?.count ?? 0) < maxRequests {
-            userRequests[key]?.append(now)
-            return true
+
+        requests.append(
+            now
+        )
+
+        userRequests[key] = requests
+
+        return true
+    }
+
+    package var retainedPrincipalCount: Int {
+        userRequests.count
+    }
+
+    private func prune(
+        through cutoff: Date
+    ) {
+        for key in Array(
+            userRequests.keys
+        ) {
+            guard var requests =
+                userRequests[key]
+            else {
+                continue
+            }
+
+            requests.removeAll {
+                $0 <= cutoff
+            }
+
+            if requests.isEmpty {
+                userRequests.removeValue(
+                    forKey: key
+                )
+            } else {
+                userRequests[key] = requests
+            }
         }
-        
-        return false
     }
 }
 
@@ -85,30 +132,82 @@ public struct GlobalRateLimitMiddleware: Middleware {
 }
 
 public struct PerUserRateLimitMiddleware: Middleware {
+    public typealias Principal = @Sendable (HTTPRequest) -> String?
+
     public let name = "per-user-rate-limit"
+
     private let limiter: PerUserRateLimiter
-    private let userKeyHeader: String
-    
-    public init(maxRequests: Int, windowSeconds: Int, userKeyHeader: String = "X-User-ID") {
-        self.limiter = PerUserRateLimiter(maxRequests: maxRequests, windowSeconds: windowSeconds)
-        self.userKeyHeader = userKeyHeader
+    private let principal: Principal
+
+    public init(
+        maxRequests: Int,
+        windowSeconds: Int,
+        principal: @escaping Principal = { _ in nil }
+    ) {
+        self.limiter = PerUserRateLimiter(
+            maxRequests: maxRequests,
+            windowSeconds: windowSeconds
+        )
+
+        self.principal = principal
     }
-    
+
+    public init(
+        maxRequests: Int,
+        windowSeconds: Int,
+        trustedHeader: String
+    ) {
+        self.init(
+            maxRequests: maxRequests,
+            windowSeconds: windowSeconds,
+            principal: { request in
+                request.header(
+                    trustedHeader
+                )
+            }
+        )
+    }
+
+    @available(
+        *,
+        deprecated,
+        message: "Use trustedHeader: only for identity supplied by a trusted upstream."
+    )
+    public init(
+        maxRequests: Int,
+        windowSeconds: Int,
+        userKeyHeader: String
+    ) {
+        self.init(
+            maxRequests: maxRequests,
+            windowSeconds: windowSeconds,
+            trustedHeader: userKeyHeader
+        )
+    }
+
     public func handle(
         _ request: HTTPRequest,
         _ router: Router,
         next: @Sendable (HTTPRequest, Router) async -> HTTPResponse
     ) async -> HTTPResponse {
-        let userKey = request.headers[userKeyHeader] ?? "anonymous"
-        let allowed = await limiter.recordRequest(for: userKey)
-        
+        let key = principal(
+            request
+        ) ?? "anonymous"
+
+        let allowed = await limiter.recordRequest(
+            for: key
+        )
+
         guard allowed else {
             return HTTPResponse(
                 status: .tooManyRequests,
-                body: "Rate limit exceeded for user: \(userKey)"
+                body: "Rate limit exceeded"
             )
         }
-        
-        return await next(request, router)
+
+        return await next(
+            request,
+            router
+        )
     }
 }

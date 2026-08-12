@@ -1,36 +1,12 @@
 import Foundation
 import HTTP
 
-public enum RouteError: Error, LocalizedError {
-    case invalidMiddleware
-    
-    public var errorDescription: String? {
-        switch self {
-        case .invalidMiddleware:
-            return "Failed to initialize middleware object inside route (use)"
-        }
-    }
-
-    public var failureReason: String? {
-        switch self {
-        case .invalidMiddleware:
-            return "The middleware object was not present"
-        }
-    }
-    
-    public var recoverySuggestion: String? {
-        switch self {
-        case .invalidMiddleware:
-            return "Ensure the middleware initializer doesn't return nil"
-        }
-    }
-}
-
 public struct Route: Sendable {
     public let method: HTTPMethod
     public let path: String
     public let handler: @Sendable (HTTPRequest, Router) async -> HTTPResponse
     public var middleware: [Middleware] = []
+    public var jsonPolicy: ServerJSONPolicy?
 
     /// Extra methods that are allowed to "ride" this route
     /// (e.g. OPTIONS riding POST, HEAD riding GET).

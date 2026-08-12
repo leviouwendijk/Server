@@ -101,24 +101,40 @@ public func buildWireRequest(
     path: String,
     headers: [String: String],
     body: String?
-) -> String {
-    do {
-        return try buildValidatedWireRequest(
-            host: host,
-            method: method,
-            path: path,
-            headers: headers,
-            body: body
-        )
-    } catch {
-        return fallbackWireRequest()
-    }
+) throws -> String {
+    try buildValidatedWireRequest(
+        host: host,
+        method: method,
+        path: path,
+        headers: headers,
+        body: body
+    )
 }
 
-private func fallbackWireRequest() -> String {
-    [
-        "GET /",
-        "Host: invalid.local",
-        "",
-    ].joined(separator: HTTPConstants.crlf) + HTTPConstants.crlf
-}
+// public func buildWireRequest(
+//     host: String,
+//     method: HTTPMethod,
+//     path: String,
+//     headers: [String: String],
+//     body: String?
+// ) -> String {
+//     do {
+//         return try buildValidatedWireRequest(
+//             host: host,
+//             method: method,
+//             path: path,
+//             headers: headers,
+//             body: body
+//         )
+//     } catch {
+//         return fallbackWireRequest()
+//     }
+// }
+
+// private func fallbackWireRequest() -> String {
+//     [
+//         "GET /",
+//         "Host: invalid.local",
+//         "",
+//     ].joined(separator: HTTPConstants.crlf) + HTTPConstants.crlf
+// }

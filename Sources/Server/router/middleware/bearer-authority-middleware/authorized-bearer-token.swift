@@ -22,15 +22,20 @@ public struct AuthorizedBearerToken: Sendable {
         token: String,
         authority: BearerAuthority
     ) throws {
-        guard 
-            !authority.invalidated.contains(token)
-        else {
+        let fingerprint =
+            BearerAuthority.fingerprint(
+                token
+            )
+
+        guard !authority.invalidatedFingerprints.contains(
+            fingerprint
+        ) else {
             throw BearerTokenError.expired
         }
 
-        guard 
-            authority.authorized.contains(token)
-        else {
+        guard authority.authorizedFingerprints.contains(
+            fingerprint
+        ) else {
             throw BearerTokenError.unauthorized
         }
 

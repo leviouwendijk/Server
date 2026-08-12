@@ -44,6 +44,14 @@ public func routes() throws -> [Route] {
         .use(cors)
         .allow(.options)
 
+        get(
+            "_benchmark"
+        ) {
+            .ok(
+                body: "ok"
+            )
+        }
+
         get("health") {
             ServerLiveTrace.route(
                 "health",

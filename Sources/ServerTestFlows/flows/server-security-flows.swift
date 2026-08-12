@@ -27,13 +27,15 @@ extension ServerSecurityFlows {
         ) {
             let injectedPath = "/safe HTTP/1.1\r\nX-Injected-Path: yes\r\n\r\nGET /admin"
 
-            let wire = buildWireRequest(
+            guard let wire = try? buildWireRequest(
                 host: "127.0.0.1",
                 method: .get,
                 path: injectedPath,
                 headers: [:],
                 body: nil
-            )
+            ) else {
+                return false
+            }
 
             return wire.contains("X-Injected-Path: yes")
                 && wire.contains("\r\n\r\nGET /admin")
@@ -48,7 +50,7 @@ extension ServerSecurityFlows {
             impact: "attacker-controlled header value can create additional HTTP headers",
             evidence: "X-Injected-Header reaches the serialized wire request as its own header"
         ) {
-            let wire = buildWireRequest(
+            guard let wire = try? buildWireRequest(
                 host: "127.0.0.1",
                 method: .get,
                 path: "/safe",
@@ -56,7 +58,9 @@ extension ServerSecurityFlows {
                     "X-Test": "ok\r\nX-Injected-Header: yes"
                 ],
                 body: nil
-            )
+            ) else {
+                return false
+            }
 
             return wire.contains("X-Injected-Header: yes")
         }
@@ -70,7 +74,7 @@ extension ServerSecurityFlows {
             impact: "attacker-controlled header name can create additional HTTP header lines",
             evidence: "X-Injected-Name reaches the serialized wire request as its own header line"
         ) {
-            let wire = buildWireRequest(
+            guard let wire = try? buildWireRequest(
                 host: "127.0.0.1",
                 method: .get,
                 path: "/safe",
@@ -78,7 +82,9 @@ extension ServerSecurityFlows {
                     "X-Test\r\nX-Injected-Name": "yes"
                 ],
                 body: nil
-            )
+            ) else {
+                return false
+            }
 
             return wire.contains("X-Injected-Name: yes")
         }
@@ -92,7 +98,7 @@ extension ServerSecurityFlows {
             impact: "attacker-controlled auth material can inject additional HTTP headers",
             evidence: "X-Injected-Auth reaches the serialized wire request as its own header"
         ) {
-            let wire = buildWireRequest(
+            guard let wire = try? buildWireRequest(
                 host: "127.0.0.1",
                 method: .get,
                 path: "/safe",
@@ -100,7 +106,9 @@ extension ServerSecurityFlows {
                     "Authorization": "Bearer good-token\r\nX-Injected-Auth: yes"
                 ],
                 body: nil
-            )
+            ) else {
+                return false
+            }
 
             return wire.contains("X-Injected-Auth: yes")
         }

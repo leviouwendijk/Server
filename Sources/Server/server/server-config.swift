@@ -5,66 +5,6 @@ import Loggers
 import Cryptography
 import HTTP
 
-public enum ConfigError: Error, LocalizedError {
-    case failedToResolveName
-
-    public var errorDescription: String? {
-        switch self {
-        case .failedToResolveName:
-            return "Failed to resolve name"
-        }
-    }
-
-    public var failureReason: String? {
-        switch self {
-        case .failedToResolveName:
-            return "The name parameter is empty"
-        }
-    }
-
-    public var recoverySuggestion: String? {
-        switch self {
-        case .failedToResolveName:
-            return "Ensure the name parameter is set or passed through the environment (ex.: 'APP_NAME')"
-        }
-    }
-}
-
-public struct ServerLimits: Sendable, Hashable, Equatable {
-    public let content: HTTPContentLengthPolicy
-    public let headers: HTTPHeaderPolicy
-
-    public init(
-        content: HTTPContentLengthPolicy = .default,
-        headers: HTTPHeaderPolicy = .requestDefault
-    ) {
-        self.content = content
-        self.headers = headers
-    }
-
-    public static let `default` = Self()
-}
-
-public struct ServerSecurity: Sendable, Hashable, Equatable {
-    public let target: HTTPRequestTargetPolicy
-    public let methods: Set<HTTPMethod>
-
-    public init(
-        target: HTTPRequestTargetPolicy = .default,
-        methods: Set<HTTPMethod> = HTTPMethod.defaultServerAllowed
-    ) {
-        self.target = target
-        self.methods = methods
-    }
-
-    public static let `default` = Self()
-
-    public static let permissive = Self(
-        target: .permissive,
-        methods: HTTPMethod.allServerMethods
-    )
-}
-
 public struct ServerConfig: Sendable {
     public let name: String?
     public let port: UInt16
@@ -72,7 +12,9 @@ public struct ServerConfig: Sendable {
     public let logLevel: LogLevel
     public let maxConnections: Int?
     public let limits: ServerLimits
+    public let timeouts: ServerTimeouts
     public let security: ServerSecurity
+    public let json: ServerJSONPolicy
 
     public init(
         name: String? = nil,
@@ -81,7 +23,9 @@ public struct ServerConfig: Sendable {
         logLevel: LogLevel = .info,
         maxConnections: Int? = nil,
         limits: ServerLimits = .default,
-        security: ServerSecurity = .default
+        timeouts: ServerTimeouts = .default,
+        security: ServerSecurity = .default,
+        json: ServerJSONPolicy = .default
     ) {
         self.name = name
         self.port = port
@@ -89,7 +33,9 @@ public struct ServerConfig: Sendable {
         self.logLevel = logLevel
         self.maxConnections = maxConnections
         self.limits = limits
+        self.timeouts = timeouts
         self.security = security
+        self.json = json
     }
 
     public static func externallyManagedProcess(
@@ -97,16 +43,26 @@ public struct ServerConfig: Sendable {
         logLevel: LogLevel? = nil,
         maxConnections: Int? = nil,
         limits: ServerLimits = .default,
-        security: ServerSecurity = .default
+        timeouts: ServerTimeouts = .default,
+        security: ServerSecurity = .default,
+        json: ServerJSONPolicy = .default
     ) -> Self {
         Self(
             name: name ?? env("APP_NAME"),
             port: envPort(default: 9091),
             host: env("HOST") ?? "127.0.0.1",
-            logLevel: envLogLevel(logLevel, default: .info),
-            maxConnections: maxConnections,
+            logLevel: envLogLevel(
+                logLevel,
+                default: .info
+            ),
+            // maxConnections: maxConnections,
+            maxConnections: envMaxConnections(
+                maxConnections
+            ),
             limits: limits,
-            security: security
+            timeouts: timeouts,
+            security: security,
+            json: json
         )
     }
 
@@ -174,6 +130,27 @@ public struct ServerConfig: Sendable {
         try? EnvironmentExtractor.value(
             .symbol(symbol)
         )
+    }
+
+    private static func envMaxConnections(
+        _ provided: Int?
+    ) -> Int? {
+        if let provided {
+            return provided
+        }
+
+        guard let value = env(
+            "MAX_CONNECTIONS"
+        ),
+        let maximum = Int(
+            value
+        ),
+        maximum > 0
+        else {
+            return nil
+        }
+
+        return maximum
     }
 
     private static func envPort(

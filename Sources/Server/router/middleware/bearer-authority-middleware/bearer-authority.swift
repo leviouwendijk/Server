@@ -1,6 +1,7 @@
 import Foundation
 import Variables
 import Milieu
+import Cryptography
 
 public enum BearerAuthorityError: Error, LocalizedError, Sendable {
     case misconfigured
@@ -22,23 +23,38 @@ public enum BearerAuthorityError: Error, LocalizedError, Sendable {
 }
 
 public struct BearerAuthority: Sendable {
-    public let authorized: Set<String>
-    public let invalidated: Set<String>
+    public let authorizedFingerprints: Set<String>
+    public let invalidatedFingerprints: Set<String>
 
-    /// Accepts raw tokens (less safe, unless you're dealing in short-lived tokens)
     public init(
         authorized_tokens: Set<String>,
         invalidated_tokens: Set<String> = []
     ) throws {
-        let authorized = try Self.sanitize(authorized_tokens, kind: .authorized)
-        let invalidated = try Self.sanitize(invalidated_tokens, kind: .invalidated)
+        let authorized = try Self.sanitize(
+            authorized_tokens,
+            kind: .authorized
+        )
+
+        let invalidated = try Self.sanitize(
+            invalidated_tokens,
+            kind: .invalidated
+        )
 
         guard !authorized.isEmpty else {
             throw BearerAuthorityError.misconfigured
         }
 
-        self.authorized = authorized
-        self.invalidated = invalidated
+        self.authorizedFingerprints = Set(
+            authorized.map(
+                Self.fingerprint
+            )
+        )
+
+        self.invalidatedFingerprints = Set(
+            invalidated.map(
+                Self.fingerprint
+            )
+        )
     }
 
     /// Accepts symbols used for environment extraction
@@ -85,6 +101,16 @@ public struct BearerAuthority: Sendable {
         try self.init(
             authorized: auth_symbols,
             invalidated: invalidated,
+        )
+    }
+
+    static func fingerprint(
+        _ token: String
+    ) -> String {
+        CryptographicDigest.sha256Hex(
+            Data(
+                token.utf8
+            )
         )
     }
 

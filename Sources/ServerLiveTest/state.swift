@@ -9,7 +9,7 @@ let config = ServerConfig(
     logLevel: .info,
     limits: .init(
         content: .standardJSONAPI,
-        headers: .requestDefault
+        headers: HTTPHeaderPolicy.request.default
     ),
     security: .default
 )

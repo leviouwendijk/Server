@@ -22,7 +22,8 @@ public struct ServerProcess: Sendable {
     ) {
         let router = Router(
             routes: routes,
-            methods: config.security.methods
+            methods: config.security.methods,
+            json: config.json
         )
 
         self.config = config
@@ -47,8 +48,21 @@ public struct ServerProcess: Sendable {
                 await action.perform()
             }
 
+            // try await engine.start()
+            // try await Task.sleep(nanoseconds: UInt64.max)
             try await engine.start()
-            try await Task.sleep(nanoseconds: UInt64.max)
+
+            switch try await engine.waitForTermination() {
+            case .stopped:
+                break
+
+            case .failed(
+                let message
+            ):
+                throw ServerError.failedToStartListener(
+                    message
+                )
+            }
         } catch is CancellationError {
             await logger?.log("Server process cancelled", level: .debug)
         } catch {
@@ -120,6 +134,91 @@ public struct ServerProcess: Sendable {
             await logger?.log("Running termination action: \(action.name)", level: .info)
             await action.perform()
         }
+    }
+}
+
+extension ServerProcess {
+    public struct Throwing: Sendable {
+        private let process: ServerProcess
+
+        internal init(
+            process: ServerProcess
+        ) {
+            self.process = process
+        }
+
+        public func run() async throws {
+            do {
+                for action in process.actions.launch {
+                    await process.logger?.log(
+                        "Running launch action: \(action.name)",
+                        level: .info
+                    )
+
+                    await action.perform()
+                }
+
+                try await process.engine.start()
+
+                switch try await process.engine.waitForTermination() {
+                case .stopped:
+                    break
+
+                case .failed(
+                    let message
+                ):
+                    throw ServerError.failedToStartListener(
+                        message
+                    )
+                }
+            } catch is CancellationError {
+                await process.logger?.log(
+                    "Server process cancelled",
+                    level: .debug
+                )
+
+                await process.terminate()
+
+                throw CancellationError()
+            } catch {
+                await process.logger?.log(
+                    "Failed to run server process: \(error.localizedDescription)",
+                    level: .error
+                )
+
+                await process.terminate()
+
+                throw error
+            }
+
+            await process.terminate()
+        }
+
+        public static func run(
+            config: ServerConfig = ServerConfig.externallyManagedProcess(),
+            routes: [Route],
+            statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
+            logger: StandardLogger? = nil,
+            activity: HTTPActivityCallback? = nil,
+            actions: ServerActions = .empty
+        ) async throws {
+            let process = ServerProcess(
+                config: config,
+                routes: routes,
+                statusRegistry: statusRegistry,
+                logger: logger,
+                activity: activity,
+                actions: actions
+            )
+
+            try await process.throwing.run()
+        }
+    }
+
+    public var throwing: Throwing {
+        Throwing(
+            process: self
+        )
     }
 }
 
