@@ -34,6 +34,7 @@ let package = Package(
 
         .package(url: "https://github.com/leviouwendijk/Parsers.git", branch: "master"),
 
+        .package(url: "https://github.com/leviouwendijk/Path.git", branch: "master"),
         .package(url: "https://github.com/leviouwendijk/TestFlows.git", branch: "master"),
     ],
     targets: [
@@ -51,6 +52,7 @@ let package = Package(
 
                 .product(name: "Parsers", package: "Parsers"),
 
+                .product(name: "Path", package: "Path"),
                 .product(name: "TestFlows", package: "TestFlows"),
             ]
         ),

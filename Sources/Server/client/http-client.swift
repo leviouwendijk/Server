@@ -166,6 +166,21 @@ public struct HTTPClient: Sendable {
         log("Got result after \(pollCount) polls")
         return try (await responseActor.getResult())!.get()
     }
+
+    public func send<Input, Output>(
+        _ endpoint: Endpoint<Input, Output>,
+        headers: [String: String] = [:],
+        body: String? = nil,
+        auth: RequestAuth = .none
+    ) async throws -> HTTPResponse {
+        try await send(
+            method: endpoint.method,
+            path: endpoint.path,
+            headers: headers,
+            body: body,
+            auth: auth
+        )
+    }
     
     // MARK: - Convenience Methods
     

@@ -42,7 +42,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 let contentLength = try HTTPFraming.extractContentLength(
                     from: Data(raw.utf8)
@@ -79,7 +81,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 let contentLength = try HTTPFraming.extractContentLength(
                     from: Data(raw.utf8)
@@ -116,7 +120,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.header("Transfer-Encoding") != nil
             } catch {
@@ -158,7 +164,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.header("X-Forwarded-For") == "203.0.113.66"
                     && request.clientIP == "203.0.113.66"
@@ -189,7 +197,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.header("X-Real-IP") == "203.0.113.66"
                     && request.clientIP == "203.0.113.66"
@@ -222,7 +232,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.header("Content-Type") == "application/json"
             } catch {
@@ -312,7 +324,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.header("X-Large")?.count == value.count
             } catch {
@@ -341,7 +355,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.header("X-Fill-511") == "511"
             } catch {
@@ -394,7 +410,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
                 let response = await router.route(request)
 
                 return response.status.code == 200
@@ -435,7 +453,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
                 let response = await router.route(request)
 
                 return response.status.code == 200
@@ -475,7 +495,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.path == "/admin/%2e%2e/public"
             } catch {
@@ -500,7 +522,9 @@ extension ServerSecurityFlows {
             )
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.path == "//admin"
             } catch {

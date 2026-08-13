@@ -22,7 +22,9 @@ extension ServerSecurityFlows {
                 ]
             )
 
-            let request = try HTTPRequestParser.parse(raw)
+            let request = try HTTPRequest(
+                parsing: raw
+            )
 
             try Expect.equal(
                 request.method,
@@ -63,7 +65,9 @@ extension ServerSecurityFlows {
                 ]
             )
 
-            let request = try HTTPRequestParser.parse(raw)
+            let request = try HTTPRequest(
+                parsing: raw
+            )
 
             try Expect.equal(
                 request.method,
@@ -91,7 +95,9 @@ extension ServerSecurityFlows {
                 body: body
             )
 
-            let request = try HTTPRequestParser.parse(raw)
+            let request = try HTTPRequest(
+                parsing: raw
+            )
 
             try Expect.equal(
                 request.method,
@@ -133,7 +139,9 @@ extension ServerSecurityFlows {
                 ]
             )
 
-            let request = try HTTPRequestParser.parse(raw)
+            let request = try HTTPRequest(
+                parsing: raw
+            )
 
             try Expect.equal(
                 request.header("X-Callback"),
@@ -151,7 +159,9 @@ extension ServerSecurityFlows {
                 ]
             )
 
-            let request = try HTTPRequestParser.parse(raw)
+            let request = try HTTPRequest(
+                parsing: raw
+            )
 
             try Expect.equal(
                 request.header("Host"),
@@ -175,7 +185,9 @@ extension ServerSecurityFlows {
                 ]
             )
 
-            let request = try HTTPRequestParser.parse(raw)
+            let request = try HTTPRequest(
+                parsing: raw
+            )
 
             try Expect.equal(
                 request.header("host"),
@@ -205,7 +217,9 @@ extension ServerSecurityFlows {
                 ]
             )
 
-            let request = try HTTPRequestParser.parse(raw)
+            let request = try HTTPRequest(
+                parsing: raw
+            )
 
             try Expect.equal(
                 request.bearerToken(),
@@ -233,7 +247,9 @@ extension ServerSecurityFlows {
                 body: body
             )
 
-            let request = try HTTPRequestParser.parse(raw)
+            let request = try HTTPRequest(
+                parsing: raw
+            )
             let payload = try request.decode(
                 ParserRegressionPayload.self
             )
@@ -259,7 +275,7 @@ extension ServerSecurityFlows {
                 ).utf8
             )
 
-            let contentLength = HTTPRequestParser.extractContentLength(
+            let contentLength = HTTPRequest.extractContentLength(
                 from: headerData
             )
 
@@ -281,7 +297,7 @@ extension ServerSecurityFlows {
                 ).utf8
             )
 
-            let contentLength = HTTPRequestParser.extractContentLength(
+            let contentLength = HTTPRequest.extractContentLength(
                 from: headerData
             )
 
@@ -302,7 +318,7 @@ extension ServerSecurityFlows {
                 ).utf8
             )
 
-            let contentLength = HTTPRequestParser.extractContentLength(
+            let contentLength = HTTPRequest.extractContentLength(
                 from: headerData
             )
 
@@ -323,7 +339,9 @@ extension ServerSecurityFlows {
             try Expect.throwsError(
                 "request-parser.unknown-method"
             ) {
-                _ = try HTTPRequestParser.parse(raw)
+                _ = try HTTPRequest(
+                    parsing: raw
+                )
             }
         }
 
@@ -338,7 +356,9 @@ extension ServerSecurityFlows {
             try Expect.throwsError(
                 "request-parser.missing-path"
             ) {
-                _ = try HTTPRequestParser.parse(raw)
+                _ = try HTTPRequest(
+                    parsing: raw
+                )
             }
         }
 
@@ -353,7 +373,9 @@ extension ServerSecurityFlows {
             try Expect.throwsError(
                 "request-parser.malformed-header"
             ) {
-                _ = try HTTPRequestParser.parse(raw)
+                _ = try HTTPRequest(
+                    parsing: raw
+                )
             }
         }
     }
@@ -378,7 +400,9 @@ extension ServerSecurityFlows {
                 body: "hello"
             )
 
-            let response = try HTTPResponseParser.parse(raw)
+            let response = try HTTPResponse(
+                parsing: raw
+            )
 
             try Expect.equal(
                 response.status.code,
@@ -422,7 +446,9 @@ extension ServerSecurityFlows {
                 body: "hello"
             )
 
-            let response = try HTTPResponseParser.parse(raw)
+            let response = try HTTPResponse(
+                parsing: raw
+            )
 
             try Expect.equal(
                 response.headers["Content-Type"],
@@ -466,7 +492,9 @@ extension ServerSecurityFlows {
                 body: "{}"
             )
 
-            let response = try HTTPResponseParser.parse(raw)
+            let response = try HTTPResponse(
+                parsing: raw
+            )
 
             try Expect.equal(
                 response.header("content-type"),
@@ -499,7 +527,9 @@ extension ServerSecurityFlows {
                 body: body
             )
 
-            let response = try HTTPResponseParser.parse(raw)
+            let response = try HTTPResponse(
+                parsing: raw
+            )
 
             try Expect.equal(
                 response.body,
@@ -520,7 +550,9 @@ extension ServerSecurityFlows {
                 body: body
             )
 
-            let response = try HTTPResponseParser.parse(raw)
+            let response = try HTTPResponse(
+                parsing: raw
+            )
 
             try Expect.equal(
                 response.body,
@@ -539,7 +571,9 @@ extension ServerSecurityFlows {
             )
 
             let wire = HTTPResponseBuilder.build(original)
-            let parsed = try HTTPResponseParser.parse(wire)
+            let parsed = try HTTPResponse(
+                parsing: wire
+            )
 
             try Expect.equal(
                 parsed.status.code,
@@ -574,7 +608,9 @@ extension ServerSecurityFlows {
                 ]
             )
 
-            let response = try HTTPResponseParser.parse(raw)
+            let response = try HTTPResponse(
+                parsing: raw
+            )
 
             try Expect.equal(
                 response.status.code,
@@ -598,7 +634,9 @@ extension ServerSecurityFlows {
                 ]
             )
 
-            let response = try HTTPResponseParser.parse(raw)
+            let response = try HTTPResponse(
+                parsing: raw
+            )
 
             try Expect.equal(
                 response.status.code,
@@ -623,7 +661,9 @@ extension ServerSecurityFlows {
                 body: "ok"
             )
 
-            let response = try HTTPResponseParser.parse(raw)
+            let response = try HTTPResponse(
+                parsing: raw
+            )
 
             try Expect.equal(
                 response.headers["Content-Type"],
@@ -648,7 +688,7 @@ extension ServerSecurityFlows {
                 ).utf8
             )
 
-            let contentLength = HTTPResponseParser.extractContentLength(
+            let contentLength = HTTPResponse.extractContentLength(
                 from: headerData
             )
 
@@ -669,7 +709,7 @@ extension ServerSecurityFlows {
                 ).utf8
             )
 
-            let contentLength = HTTPResponseParser.extractContentLength(
+            let contentLength = HTTPResponse.extractContentLength(
                 from: headerData
             )
 
@@ -690,7 +730,7 @@ extension ServerSecurityFlows {
                 ).utf8
             )
 
-            let contentLength = HTTPResponseParser.extractContentLength(
+            let contentLength = HTTPResponse.extractContentLength(
                 from: headerData
             )
 
@@ -711,7 +751,9 @@ extension ServerSecurityFlows {
             try Expect.throwsError(
                 "response-parser.invalid-status-code"
             ) {
-                _ = try HTTPResponseParser.parse(raw)
+                _ = try HTTPResponse(
+                    parsing: raw
+                )
             }
         }
 
@@ -727,7 +769,9 @@ extension ServerSecurityFlows {
             try Expect.throwsError(
                 "response-parser.malformed-header"
             ) {
-                _ = try HTTPResponseParser.parse(raw)
+                _ = try HTTPResponse(
+                    parsing: raw
+                )
             }
         }
     }

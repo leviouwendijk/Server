@@ -236,7 +236,9 @@ extension ServerSecurityFlows {
                 """
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.body == "alpha"
                     && request.body != body
@@ -262,7 +264,9 @@ extension ServerSecurityFlows {
                 """
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.method == .get
                     && request.path == "/admin"
@@ -293,7 +297,9 @@ extension ServerSecurityFlows {
                 """
 
             do {
-                let request = try HTTPRequestParser.parse(raw)
+                let request = try HTTPRequest(
+                    parsing: raw
+                )
 
                 return request.header("Authorization") == "Bearer second"
             } catch {
@@ -335,7 +341,7 @@ extension ServerSecurityFlows {
                 """.utf8
             )
 
-            let contentLength = HTTPRequestParser.extractContentLength(
+            let contentLength = HTTPRequest.extractContentLength(
                 from: headerData
             )
 
@@ -365,7 +371,7 @@ extension ServerSecurityFlows {
                 """.utf8
             )
 
-            let contentLength = HTTPRequestParser.extractContentLength(
+            let contentLength = HTTPRequest.extractContentLength(
                 from: headerData
             )
 
@@ -396,7 +402,7 @@ extension ServerSecurityFlows {
                 """.utf8
             )
 
-            let contentLength = HTTPRequestParser.extractContentLength(
+            let contentLength = HTTPRequest.extractContentLength(
                 from: headerData
             )
 
@@ -424,7 +430,7 @@ extension ServerSecurityFlows {
                 """.utf8
             )
 
-            let contentLength = HTTPResponseParser.extractContentLength(
+            let contentLength = HTTPResponse.extractContentLength(
                 from: headerData
             )
 

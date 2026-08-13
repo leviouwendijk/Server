@@ -66,6 +66,14 @@ public struct ServerConfig: Sendable {
         )
     }
 
+    public var requestPolicies: HTTPRequestPolicies {
+        HTTPRequestPolicies(
+            headers: limits.headers,
+            content: limits.content,
+            target: security.target
+        )
+    }
+
     public var requestContentLengthPolicy: HTTPContentLengthPolicy {
         limits.content
     }

@@ -4,10 +4,15 @@ import HTTP
 @available(*, message: "use new methods instead")
 public func buildHTTPResponseString(_ response: HTTPResponse) -> String {
     let bodyData = response.body.data(using: .utf8) ?? Data()
+
     var headers = response.headers
-    headers["Content-Length"] = "\(bodyData.count)"
-    if headers["Content-Type"] == nil {
-        headers["Content-Type"] = "text/plain; charset=utf-8"
+
+    headers[
+        "Content-Length"
+    ] = "\(bodyData.count)"
+
+    if headers.contentType == nil {
+        headers.contentType = "text/plain; charset=utf-8"
     }
 
     var lines: [String] = []

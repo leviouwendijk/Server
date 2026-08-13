@@ -132,7 +132,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
                     of: marker
                 ) == nil,
                    self.buffer.count
-                    > self.config.limits.headers.maximumHeaderBytes {
+                    > self.config.requestPolicies.headers.maximumHeaderBytes {
                     self.log(
                         "Header section exceeded maximum before terminator",
                         level: .debug
@@ -198,7 +198,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
 
             let headerEnd = range.upperBound
 
-            guard headerEnd <= config.limits.headers.maximumHeaderBytes else {
+            guard headerEnd <= config.requestPolicies.headers.maximumHeaderBytes else {
                 log(
                     "Header section too large: \(headerEnd)",
                     level: .debug
@@ -229,7 +229,8 @@ final class ServerConnectionHandler: @unchecked Sendable {
             do {
                 contentLength = try HTTPFraming.extractContentLength(
                     from: headerData,
-                    policy: config.limits.content
+                    // policy: config.limits.content
+                    policy: config.requestPolicies.content
                 ) ?? 0
             } catch HTTPParsingError.contentLengthTooLarge(
                 let value,
@@ -430,10 +431,14 @@ final class ServerConnectionHandler: @unchecked Sendable {
         )
 
         do {
-            let request = try HTTPRequestParser.parse(
-                text,
-                headerPolicy: config.limits.headers,
-                requestTargetPolicy: config.security.target
+            // let request = try HTTPRequestParser.parse(
+            //     text,
+            //     headerPolicy: config.limits.headers,
+            //     requestTargetPolicy: config.security.target
+            // )
+            let request = try HTTPRequest(
+                parsing: text,
+                policies: config.requestPolicies
             )
 
             let callback = activityCallback
@@ -536,7 +541,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 ),
                 closeAfterSend: true
             )
-        } catch HTTPParsingError.requestTargetTooLong(_) {
+        } catch HTTPValidationError.requestTargetTooLong(_) {
             enqueueResponse(
                 HTTPResponse(
                     status: .uriTooLong,
@@ -544,14 +549,14 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 ),
                 closeAfterSend: true
             )
-        } catch HTTPParsingError.ambiguousRequestTarget(_) {
+        } catch HTTPValidationError.ambiguousRequestTarget(_) {
             enqueueResponse(
                 HTTPResponse.badRequest(
                     body: "Ambiguous request target"
                 ),
                 closeAfterSend: true
             )
-        } catch HTTPParsingError.forbiddenHeader(let name) {
+        } catch HTTPValidationError.forbiddenHeader(let name) {
             log(
                 "Forbidden request header rejected: \(name)",
                 level: .debug

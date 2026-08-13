@@ -1,5 +1,5 @@
 {
-  "originHash" : "db88f01305b1256845513eb3883bfac5896ea35d76e6b0c7f5dfef9a1a762527",
+  "originHash" : "ee8f83bde163dfa730d406744f437173b5ada5cdd56c0b9adcc45cdd2555fc1d",
   "pins" : [
     {
       "identity" : "ansi",
@@ -52,7 +52,16 @@
       "location" : "https://github.com/leviouwendijk/HTTP.git",
       "state" : {
         "branch" : "master",
-        "revision" : "f0c38a2599b0e01fe97310fd40ab521682d6c2eb"
+        "revision" : "5d192e57ad16567b3477f5c1901e143a5b9a8002"
+      }
+    },
+    {
+      "identity" : "io",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leviouwendijk/IO.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "4cd73c07e948b6520ba912b08eb5f132aaa81775"
       }
     },
     {
@@ -97,7 +106,7 @@
       "location" : "https://github.com/leviouwendijk/Parsing.git",
       "state" : {
         "branch" : "master",
-        "revision" : "38e346697615fbb32fdac86e6528c18104d89334"
+        "revision" : "8cd4b7bdc25d590d65b803a4f3e07e4fe3756664"
       }
     },
     {
@@ -106,7 +115,7 @@
       "location" : "https://github.com/leviouwendijk/Path.git",
       "state" : {
         "branch" : "master",
-        "revision" : "8693f15d32ed07a62eb1a8ff800a1e89b3a72199"
+        "revision" : "96fba9aef5720cddfc87e25c9cdc0f6a34fd64cf"
       }
     },
     {
@@ -142,7 +151,7 @@
       "location" : "https://github.com/leviouwendijk/Readers.git",
       "state" : {
         "branch" : "master",
-        "revision" : "b22405c562664feb41a416538b9d16102d62e62f"
+        "revision" : "c47991874555ffd0b01ec504d3ba98afde0c1677"
       }
     },
     {

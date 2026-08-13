@@ -201,9 +201,13 @@ final class RequestConnectionHandler: @unchecked Sendable {
             )
 
             // let response = try HTTPResponseParser.parse(responseText)
-            let response = try HTTPResponseParser.parse(
-                responseText,
-                headerPolicy: policies.headers
+            // let response = try HTTPResponseParser.parse(
+            //     responseText,
+            //     headerPolicy: policies.headers
+            // )
+            let response = try HTTPResponse(
+                parsing: responseText,
+                policies: policies
             )
 
             log(

@@ -1,12 +1,13 @@
 import Foundation
+import Path
 
 // public func group(
 //     _ prefix: String...,
 //     @GroupBuilder builder: () -> [Route]
-// ) -> [Route] {
+// ) -> GroupWithMiddleware {
 //     let prefixPath = prefix.joined(separator: "/")
     
-//     return builder().map { route in
+//     let routes = builder().map { route in
 //         let newPath: String
 //         if route.path == "/" {
 //             newPath = "/" + prefixPath
@@ -23,6 +24,8 @@ import Foundation
 //         newRoute.syntheticMethods = route.syntheticMethods
 //         return newRoute
 //     }
+
+//     return GroupWithMiddleware(routes: routes)
 // }
 
 public func group(
@@ -45,6 +48,32 @@ public func group(
             handler: route.handler
         )
         newRoute.middleware       = route.middleware
+        newRoute.jsonPolicy       = route.jsonPolicy
+        newRoute.syntheticMethods = route.syntheticMethods
+        return newRoute
+    }
+
+    return GroupWithMiddleware(routes: routes)
+}
+
+public func group(
+    _ prefix: StandardPath,
+    @GroupBuilder builder: () -> [Route]
+) -> GroupWithMiddleware {
+    let routes = builder().map { route in
+        let newPath = prefix.merged(
+            appending: StandardPath(
+                rawPath: route.path
+            )
+        )
+
+        var newRoute = Route(
+            method: route.method,
+            path: newPath,
+            handler: route.handler
+        )
+        newRoute.middleware       = route.middleware
+        newRoute.jsonPolicy       = route.jsonPolicy
         newRoute.syntheticMethods = route.syntheticMethods
         return newRoute
     }
