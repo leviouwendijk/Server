@@ -43,6 +43,153 @@ private struct ProductionAnalyzerEvent:
     let ok: Bool
 }
 
+private struct ProductionProtectedPayload:
+    Codable,
+    Sendable,
+    Equatable
+{
+    let message: String
+    let count: Int
+}
+
+private struct ProductionProtectedAck:
+    ReturnableResponse,
+    Equatable
+{
+    let accepted: Int
+    let message: String
+}
+
+private struct ProductionLargeJSONRow:
+    Codable,
+    Sendable,
+    Equatable
+{
+    let id: Int
+    let path: String
+    let title: String
+    let payload: String
+}
+
+private struct ProductionLargeJSONResponse:
+    ReturnableResponse,
+    Equatable
+{
+    let rows: [ProductionLargeJSONRow]
+    let tail: String
+}
+
+private struct ProductionPreflightRejectingMiddleware:
+    Middleware
+{
+    let name = "production-preflight-rejecting"
+
+    func handle(
+        _ request: HTTPRequest,
+        _ router: Router,
+        next: @Sendable (
+            HTTPRequest,
+            Router
+        ) async -> HTTPResponse
+    ) async -> HTTPResponse {
+        .internalServerError(
+            body: "stacked middleware should not run for CORS preflight"
+        )
+    }
+}
+
+private func productionProtectedBody() throws -> String {
+    let data = try JSONEncoder().encode(
+        ProductionProtectedPayload(
+            message: "café-βeta-protected",
+            count: 7
+        )
+    )
+
+    return String(
+        decoding: data,
+        as: UTF8.self
+    )
+}
+
+private func productionLargeJSONModel() -> ProductionLargeJSONResponse {
+    let payload = String(
+        repeating: "nested-café-βeta-production-json-payload-",
+        count: 4
+    )
+
+    return ProductionLargeJSONResponse(
+        rows: (0..<1_200).map { index in
+            ProductionLargeJSONRow(
+                id: index,
+                path: "/records/\(index)",
+                title: "production row \(index)",
+                payload: "\(payload)\(index)"
+            )
+        },
+        tail: "END-OF-LARGE-JSON"
+    )
+}
+
+private func productionWireResponse(
+    server: SecurityTestServer,
+    method: String,
+    path: String,
+    headers: [(String, String)] = [],
+    body: String = "",
+    timeout: TimeInterval = 2,
+    until predicate: @escaping @Sendable (
+        String
+    ) -> Bool
+) async throws -> HTTPResponse {
+    let connection = SecurityTestConnection(
+        port: server.port
+    )
+
+    guard await connection.start(
+        timeout: timeout
+    ) else {
+        throw SecurityNetworkHarnessError
+            .connectionDidNotBecomeReady
+    }
+
+    let requestHeaders = [
+        (
+            "Host",
+            "127.0.0.1"
+        ),
+        (
+            "Content-Length",
+            "\(body.utf8.count)"
+        )
+    ] + headers
+
+    guard await connection.send(
+        productionRawRequest(
+            method: method,
+            path: path,
+            headers: requestHeaders,
+            body: body
+        ),
+        timeout: timeout
+    ) else {
+        connection.cancel()
+
+        throw SecurityNetworkHarnessError.sendFailed
+    }
+
+    let raw = await connection.receive(
+        until: predicate,
+        timeout: timeout
+    ) ?? ""
+
+    connection.cancel()
+
+    return try HTTPResponse(
+        parsing: raw
+    )
+}
+
 private func productionAnalyzerBody(
     eventCount: Int = 512
 ) throws -> String {
@@ -461,6 +608,390 @@ extension ServerSecurityFlows {
                         "access-control-allow-credentials: true"
                     ),
                     "production-wire.cors.credentials"
+                )
+            }
+        }
+
+        Step(
+            "bearer-protected JSON route survives the complete socket auth and extraction path"
+        ) {
+            let body = try productionProtectedBody()
+            let bearer = BearerMiddleware(
+                rawKey: "production-wire-secret",
+                realmName: "production-wire"
+            )
+
+            try await withProductionWireServer(
+                routes: [
+                    post(
+                        "protected"
+                    ) { request in
+                        do {
+                            let payload = try request.extract(
+                                ProductionProtectedPayload.self
+                            )
+
+                            return try ProductionProtectedAck(
+                                accepted: payload.count,
+                                message: payload.message
+                            ).response()
+                        } catch {
+                            return .badRequest(
+                                body: "invalid protected payload"
+                            )
+                        }
+                    }
+                    .use(
+                        bearer
+                    )
+                ]
+            ) { server in
+                let contentType = [
+                    (
+                        "Content-Type",
+                        "application/json"
+                    )
+                ]
+
+                let missing = try await productionWireResponse(
+                    server: server,
+                    method: "POST",
+                    path: "/protected",
+                    headers: contentType,
+                    body: body,
+                    until: {
+                        $0.contains(
+                            "Missing or invalid Authorization header."
+                        ) && $0.hasSuffix(
+                            "\n"
+                        )
+                    }
+                )
+
+                try Expect.equal(
+                    missing.status.code,
+                    401,
+                    "production-wire.bearer.missing-status"
+                )
+
+                try Expect.equal(
+                    missing.header(
+                        "WWW-Authenticate"
+                    ),
+                    "Bearer realm=\"production-wire\"",
+                    "production-wire.bearer.missing-challenge"
+                )
+
+                let invalid = try await productionWireResponse(
+                    server: server,
+                    method: "POST",
+                    path: "/protected",
+                    headers: contentType + [
+                        (
+                            "Authorization",
+                            "Bearer wrong-production-wire-secret"
+                        )
+                    ],
+                    body: body,
+                    until: {
+                        $0.contains(
+                            "Invalid API token"
+                        ) && $0.hasSuffix(
+                            "\n"
+                        )
+                    }
+                )
+
+                try Expect.equal(
+                    invalid.status.code,
+                    401,
+                    "production-wire.bearer.invalid-status"
+                )
+
+                try Expect.true(
+                    invalid.header(
+                        "WWW-Authenticate"
+                    )?.contains(
+                        "invalid_token"
+                    ) == true,
+                    "production-wire.bearer.invalid-challenge"
+                )
+
+                let valid = try await productionWireResponse(
+                    server: server,
+                    method: "POST",
+                    path: "/protected",
+                    headers: contentType + [
+                        (
+                            "Authorization",
+                            "Bearer production-wire-secret"
+                        )
+                    ],
+                    body: body,
+                    until: {
+                        $0.contains(
+                            "café-βeta-protected"
+                        ) && $0.hasSuffix(
+                            "\n"
+                        )
+                    }
+                )
+
+                try Expect.equal(
+                    valid.status.code,
+                    200,
+                    "production-wire.bearer.valid-status"
+                )
+
+                let ack = try JSONDecoder().decode(
+                    ProductionProtectedAck.self,
+                    from: Data(
+                        valid.body.utf8
+                    )
+                )
+
+                try Expect.equal(
+                    ack,
+                    ProductionProtectedAck(
+                        accepted: 7,
+                        message: "café-βeta-protected"
+                    ),
+                    "production-wire.bearer.valid-json"
+                )
+            }
+        }
+
+        Step(
+            "application-generated 429 preserves Retry-After through response framing"
+        ) {
+            try await withProductionWireServer(
+                routes: [
+                    get(
+                        "rate-limited"
+                    ) {
+                        .tooManyRequests(
+                            body: "production rate limited",
+                            headers: [
+                                "Retry-After": "17"
+                            ]
+                        )
+                    }
+                ]
+            ) { server in
+                let response = try await productionWireResponse(
+                    server: server,
+                    method: "GET",
+                    path: "/rate-limited",
+                    until: {
+                        $0.contains(
+                            "production rate limited"
+                        ) && $0.hasSuffix(
+                            "\n"
+                        )
+                    }
+                )
+
+                try Expect.equal(
+                    response.status.code,
+                    429,
+                    "production-wire.rate-limit.status"
+                )
+
+                try Expect.equal(
+                    response.header(
+                        "Retry-After"
+                    ),
+                    "17",
+                    "production-wire.rate-limit.retry-after"
+                )
+            }
+        }
+
+        Step(
+            "malformed application JSON reaches request extraction and returns controlled 422"
+        ) {
+            let malformed = #"{"message":"broken","count":"#
+
+            try await withProductionWireServer(
+                routes: [
+                    post(
+                        "decode"
+                    ) { request in
+                        do {
+                            _ = try request.extract(
+                                ProductionProtectedPayload.self
+                            )
+
+                            return .ok()
+                        } catch {
+                            return HTTPResponse(
+                                status: .unprocessableEntity,
+                                body: "invalid application payload"
+                            )
+                        }
+                    }
+                ]
+            ) { server in
+                let response = try await productionWireResponse(
+                    server: server,
+                    method: "POST",
+                    path: "/decode",
+                    headers: [
+                        (
+                            "Content-Type",
+                            "application/json"
+                        )
+                    ],
+                    body: malformed,
+                    until: {
+                        $0.contains(
+                            "invalid application payload"
+                        ) && $0.hasSuffix(
+                            "\n"
+                        )
+                    }
+                )
+
+                try Expect.equal(
+                    response.status.code,
+                    422,
+                    "production-wire.malformed-json.status"
+                )
+            }
+        }
+
+        Step(
+            "CORS preflight short-circuits middleware stacked behind it on the real wire"
+        ) {
+            let cors = productionWireCORS()
+
+            try await withProductionWireServer(
+                routes: [
+                    post(
+                        "stacked-preflight"
+                    ) {
+                        .ok(
+                            body: "handler should not run"
+                        )
+                    }
+                    .use(
+                        cors
+                    )
+                    .use(
+                        ProductionPreflightRejectingMiddleware()
+                    )
+                    .allow(
+                        .options
+                    )
+                ]
+            ) { server in
+                let response = try await productionWireResponse(
+                    server: server,
+                    method: "OPTIONS",
+                    path: "/stacked-preflight",
+                    headers: [
+                        (
+                            "Origin",
+                            "https://hondenmeesters.nl"
+                        ),
+                        (
+                            "Access-Control-Request-Method",
+                            "POST"
+                        ),
+                        (
+                            "Access-Control-Request-Headers",
+                            "authorization,content-type"
+                        )
+                    ],
+                    until: {
+                        $0.contains(
+                            "\r\n\r\n"
+                        )
+                    }
+                )
+
+                try Expect.equal(
+                    response.status.code,
+                    204,
+                    "production-wire.preflight-stack.status"
+                )
+
+                try Expect.equal(
+                    response.header(
+                        "Access-Control-Allow-Origin"
+                    ),
+                    "https://hondenmeesters.nl",
+                    "production-wire.preflight-stack.origin"
+                )
+            }
+        }
+
+        Step(
+            "large structured ReturnableResponse JSON survives multi-window transport and decoding"
+        ) {
+            let model = productionLargeJSONModel()
+            let expected = try model.response()
+
+            try Expect.true(
+                expected.body.utf8.count > 65_536,
+                "production-wire.large-json.crosses-receive-window"
+            )
+
+            try await withProductionWireServer(
+                routes: [
+                    get(
+                        "large-json"
+                    ) {
+                        do {
+                            return try model.response()
+                        } catch {
+                            return .internalServerError(
+                                body: "large JSON encoding failed"
+                            )
+                        }
+                    }
+                ]
+            ) { server in
+                let response = try await productionWireResponse(
+                    server: server,
+                    method: "GET",
+                    path: "/large-json",
+                    timeout: 3,
+                    until: {
+                        $0.contains(
+                            "END-OF-LARGE-JSON"
+                        ) && $0.hasSuffix(
+                            "\n"
+                        )
+                    }
+                )
+
+                try Expect.equal(
+                    response.status.code,
+                    200,
+                    "production-wire.large-json.status"
+                )
+
+                try Expect.true(
+                    response.header(
+                        "Content-Type"
+                    )?.hasPrefix(
+                        "application/json"
+                    ) == true,
+                    "production-wire.large-json.content-type"
+                )
+
+                let decoded = try JSONDecoder().decode(
+                    ProductionLargeJSONResponse.self,
+                    from: Data(
+                        response.body.utf8
+                    )
+                )
+
+                try Expect.equal(
+                    decoded,
+                    model,
+                    "production-wire.large-json.round-trip"
                 )
             }
         }

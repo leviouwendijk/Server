@@ -3,12 +3,12 @@
   "failed_names" : [
 
   ],
-  "generated_at" : "2026-08-13T02:06:56Z",
+  "generated_at" : "2026-08-13T10:23:44Z",
   "passed" : 15,
   "results" : [
     {
       "display_name" : "Server preserves connector-v2 style API behavior",
-      "duration_seconds" : 0.0027289390563964844,
+      "duration_seconds" : 0.004437923431396484,
       "name" : "server.api-contract.connector-v2",
       "status" : "passed",
       "tags" : [
@@ -23,7 +23,7 @@
     },
     {
       "display_name" : "Server request-scoped values remain typed and isolated",
-      "duration_seconds" : 0.012825965881347656,
+      "duration_seconds" : 0.013103961944580078,
       "name" : "server.request-context",
       "status" : "passed",
       "tags" : [
@@ -36,7 +36,7 @@
     },
     {
       "display_name" : "Server JSON coding policy remains explicit, scoped, and overridable",
-      "duration_seconds" : 0.001968979835510254,
+      "duration_seconds" : 0.0021009445190429688,
       "name" : "server.json-coding.router",
       "status" : "passed",
       "tags" : [
@@ -50,7 +50,7 @@
     },
     {
       "display_name" : "Router preserves exact dispatch, fallback, synthetic methods, and middleware composition",
-      "duration_seconds" : 0.0010020732879638672,
+      "duration_seconds" : 0.0009069442749023438,
       "name" : "server.router-baseline.regression",
       "status" : "passed",
       "tags" : [
@@ -63,7 +63,7 @@
     },
     {
       "display_name" : "Typed endpoint routes remain ordinary Server routes with fail-closed transport handling",
-      "duration_seconds" : 0.0012000799179077148,
+      "duration_seconds" : 0.0011850595474243164,
       "name" : "server.typed-route.regression",
       "status" : "passed",
       "tags" : [
@@ -77,7 +77,7 @@
     },
     {
       "display_name" : "Route-local error mapping composes with typed and raw throwing routes",
-      "duration_seconds" : 0.0005650520324707031,
+      "duration_seconds" : 0.0006340742111206055,
       "name" : "server.route-error-mapping.regression",
       "status" : "passed",
       "tags" : [
@@ -91,7 +91,7 @@
     },
     {
       "display_name" : "HTTPRequestParser preserves ordinary request parsing behavior",
-      "duration_seconds" : 0.0006719827651977539,
+      "duration_seconds" : 0.0012940168380737305,
       "name" : "http.request-parser.regression",
       "status" : "passed",
       "tags" : [
@@ -103,7 +103,7 @@
     },
     {
       "display_name" : "HTTPResponseParser preserves ordinary response parsing behavior",
-      "duration_seconds" : 0.00048100948333740234,
+      "duration_seconds" : 0.0010030269622802734,
       "name" : "http.response-parser.regression",
       "status" : "passed",
       "tags" : [
@@ -115,7 +115,7 @@
     },
     {
       "display_name" : "Security network harness starts deterministic loopback peers",
-      "duration_seconds" : 0.0495610237121582,
+      "duration_seconds" : 0.047747015953063965,
       "name" : "security.harness.network.regression",
       "status" : "passed",
       "tags" : [
@@ -128,7 +128,7 @@
     },
     {
       "display_name" : "Production-shaped HTTP workloads survive real Server wire transport",
-      "duration_seconds" : 0.20829403400421143,
+      "duration_seconds" : 0.38965892791748047,
       "name" : "server.production-wire.regression",
       "status" : "passed",
       "tags" : [
@@ -144,7 +144,7 @@
     },
     {
       "display_name" : "Configured route execution deadline returns Gateway Timeout",
-      "duration_seconds" : 0.13928306102752686,
+      "duration_seconds" : 0.1286090612411499,
       "name" : "server.execution-timeout.regression",
       "status" : "passed",
       "tags" : [
@@ -156,7 +156,7 @@
     },
     {
       "display_name" : "Server startup and termination follow listener lifecycle",
-      "duration_seconds" : 0.10116899013519287,
+      "duration_seconds" : 0.10160708427429199,
       "name" : "server.lifecycle.termination.regression",
       "status" : "passed",
       "tags" : [
@@ -169,7 +169,7 @@
     },
     {
       "display_name" : "Outbound client request CRLF injection is currently possible",
-      "duration_seconds" : 0.0007909536361694336,
+      "duration_seconds" : 0.0006409883499145508,
       "name" : "security.outbound.client-request.crlf-injection",
       "status" : "secured",
       "tags" : [
@@ -182,7 +182,7 @@
     },
     {
       "display_name" : "Outbound response CRLF injection is currently possible",
-      "duration_seconds" : 0.0005649328231811523,
+      "duration_seconds" : 0.0004240274429321289,
       "name" : "security.outbound.response.crlf-injection",
       "status" : "secured",
       "tags" : [
@@ -195,7 +195,7 @@
     },
     {
       "display_name" : "Inbound request parser currently accepts ambiguous or lossy HTTP framing",
-      "duration_seconds" : 0.0006699562072753906,
+      "duration_seconds" : 0.0005310773849487305,
       "name" : "security.inbound.request-parser.framing-confusion",
       "status" : "secured",
       "tags" : [
@@ -208,7 +208,7 @@
     },
     {
       "display_name" : "Content-Length parsing currently accepts unsafe values",
-      "duration_seconds" : 0.0005040168762207031,
+      "duration_seconds" : 0.0004050731658935547,
       "name" : "security.inbound.content-length.confusion",
       "status" : "secured",
       "tags" : [
@@ -221,7 +221,7 @@
     },
     {
       "display_name" : "Qualify whether Transfer-Encoding request smuggling risks are real",
-      "duration_seconds" : 0.0005750656127929688,
+      "duration_seconds" : 0.0005429983139038086,
       "name" : "security.inbound.transfer-encoding-smuggling.qualification",
       "status" : "secured",
       "tags" : [
@@ -236,7 +236,7 @@
     },
     {
       "display_name" : "Qualify whether duplicate security-sensitive headers collapse unsafely",
-      "duration_seconds" : 0.0005719661712646484,
+      "duration_seconds" : 0.0005619525909423828,
       "name" : "security.inbound.duplicate-security-headers.qualification",
       "status" : "secured",
       "tags" : [
@@ -249,7 +249,7 @@
     },
     {
       "display_name" : "Qualify whether credentialed CORS origin reflection is possible",
-      "duration_seconds" : 0.00038802623748779297,
+      "duration_seconds" : 0.00037300586700439453,
       "name" : "security.cors.credentials-origin-reflection.qualification",
       "status" : "secured",
       "tags" : [
@@ -263,7 +263,7 @@
     },
     {
       "display_name" : "Qualify whether inbound header resource limits are absent",
-      "duration_seconds" : 0.010770082473754883,
+      "duration_seconds" : 0.008106112480163574,
       "name" : "security.inbound.header-limits.qualification",
       "status" : "secured",
       "tags" : [
@@ -277,7 +277,7 @@
     },
     {
       "display_name" : "Qualify whether TRACE and CONNECT can enter the route layer",
-      "duration_seconds" : 0.0005980730056762695,
+      "duration_seconds" : 0.00038504600524902344,
       "name" : "security.routing.unsafe-methods.qualification",
       "status" : "secured",
       "tags" : [
@@ -292,7 +292,7 @@
     },
     {
       "display_name" : "Qualify whether ambiguous request targets are accepted unnormalized",
-      "duration_seconds" : 0.0004869699478149414,
+      "duration_seconds" : 0.00024402141571044922,
       "name" : "security.routing.request-target-normalization.qualification",
       "status" : "secured",
       "tags" : [
@@ -306,7 +306,7 @@
     },
     {
       "display_name" : "Qualify runtime hardening gaps around route exposure and forwarded headers",
-      "duration_seconds" : 0.0005600452423095703,
+      "duration_seconds" : 0.00027298927307128906,
       "name" : "security.runtime-hardening.qualification",
       "status" : "secured",
       "tags" : [
@@ -320,7 +320,7 @@
     },
     {
       "display_name" : "Bearer token comparison preserves auth semantics through constant-time helper",
-      "duration_seconds" : 0.00021409988403320312,
+      "duration_seconds" : 0.0002040863037109375,
       "name" : "security.auth.bearer-token-comparison.regression",
       "status" : "passed",
       "tags" : [
@@ -333,7 +333,7 @@
     },
     {
       "display_name" : "Qualify outbound request validation failure behavior",
-      "duration_seconds" : 0.0003669261932373047,
+      "duration_seconds" : 0.00017404556274414062,
       "name" : "security.outbound.request.fail-closed.qualification",
       "status" : "secured",
       "tags" : [
@@ -347,7 +347,7 @@
     },
     {
       "display_name" : "Qualify trust boundary of per-user rate limiting",
-      "duration_seconds" : 0.00022792816162109375,
+      "duration_seconds" : 0.00020992755889892578,
       "name" : "security.rate-limit.identity.qualification",
       "status" : "secured",
       "tags" : [
@@ -361,7 +361,7 @@
     },
     {
       "display_name" : "Qualify externally observable BearerAuthority token state",
-      "duration_seconds" : 0.0002880096435546875,
+      "duration_seconds" : 0.0002840757369995117,
       "name" : "security.auth.bearer-authority.response-oracle.qualification",
       "status" : "secured",
       "tags" : [
@@ -375,7 +375,7 @@
     },
     {
       "display_name" : "Qualify preservation of existing Vary response metadata",
-      "duration_seconds" : 0.0001970529556274414,
+      "duration_seconds" : 0.00018703937530517578,
       "name" : "security.cors.vary-preservation.qualification",
       "status" : "secured",
       "tags" : [
@@ -389,7 +389,7 @@
     },
     {
       "display_name" : "Qualify retained principal-state growth in per-user rate limiter",
-      "duration_seconds" : 0.0012220144271850586,
+      "duration_seconds" : 0.001255035400390625,
       "name" : "security.rate-limit.state-growth.qualification",
       "status" : "secured",
       "tags" : [
@@ -403,7 +403,7 @@
     },
     {
       "display_name" : "Qualify whether actual HTTPClient debug output exposes authorization secrets",
-      "duration_seconds" : 0.01498103141784668,
+      "duration_seconds" : 0.01427304744720459,
       "name" : "security.client.debug-credential-leakage.qualification",
       "status" : "secured",
       "tags" : [
@@ -417,7 +417,7 @@
     },
     {
       "display_name" : "Qualify whether live activity events retain query string secrets",
-      "duration_seconds" : 0.029125094413757324,
+      "duration_seconds" : 0.03238499164581299,
       "name" : "security.activity-log.query-leakage.qualification",
       "status" : "secured",
       "tags" : [
@@ -431,7 +431,7 @@
     },
     {
       "display_name" : "CORS preflight explicitly varies on Origin",
-      "duration_seconds" : 0.00019598007202148438,
+      "duration_seconds" : 0.000574946403503418,
       "name" : "security.cors.preflight-vary.regression",
       "status" : "passed",
       "tags" : [
@@ -444,7 +444,7 @@
     },
     {
       "display_name" : "Qualify whether CRLF in request path enables header injection",
-      "duration_seconds" : 0.0003139972686767578,
+      "duration_seconds" : 0.0003820657730102539,
       "name" : "security.outbound.header-injection.qualification",
       "status" : "secured",
       "tags" : [
@@ -458,7 +458,7 @@
     },
     {
       "display_name" : "Qualify whether CRLF in header values enables header injection",
-      "duration_seconds" : 0.00018095970153808594,
+      "duration_seconds" : 0.00039005279541015625,
       "name" : "security.outbound.header-value-injection.qualification",
       "status" : "secured",
       "tags" : [
@@ -472,7 +472,7 @@
     },
     {
       "display_name" : "BearerMiddleware preserves constant-time token comparison behavior",
-      "duration_seconds" : 0.00021600723266601562,
+      "duration_seconds" : 0.00043594837188720703,
       "name" : "security.auth.bearer-middleware.equality-operator.qualification",
       "status" : "passed",
       "tags" : [
@@ -486,7 +486,7 @@
     },
     {
       "display_name" : "Qualify whether BearerAuthority stores raw token secrets",
-      "duration_seconds" : 0.00018298625946044922,
+      "duration_seconds" : 0.0004010200500488281,
       "name" : "security.auth.bearer-authority.raw-storage.qualification",
       "status" : "secured",
       "tags" : [
@@ -500,7 +500,7 @@
     },
     {
       "display_name" : "Qualify whether maxConnections limit is enforced",
-      "duration_seconds" : 0.031849026679992676,
+      "duration_seconds" : 0.03235507011413574,
       "name" : "security.server.connection-cap.qualification",
       "status" : "secured",
       "tags" : [
@@ -514,7 +514,7 @@
     },
     {
       "display_name" : "Qualify whether completed connection handlers are released",
-      "duration_seconds" : 0.30589497089385986,
+      "duration_seconds" : 0.29389500617980957,
       "name" : "security.server.handler-retention.qualification",
       "status" : "secured",
       "tags" : [
@@ -528,7 +528,7 @@
     },
     {
       "display_name" : "Qualify incomplete request-header timeout behavior",
-      "duration_seconds" : 0.28459906578063965,
+      "duration_seconds" : 0.27777600288391113,
       "name" : "security.server.slow-header.qualification",
       "status" : "secured",
       "tags" : [
@@ -542,7 +542,7 @@
     },
     {
       "display_name" : "Qualify incomplete request-body timeout behavior",
-      "duration_seconds" : 0.2793560028076172,
+      "duration_seconds" : 0.2780780792236328,
       "name" : "security.server.slow-body.qualification",
       "status" : "secured",
       "tags" : [
@@ -557,7 +557,7 @@
     },
     {
       "display_name" : "Qualify whether server host configuration actually restricts binding",
-      "duration_seconds" : 1.0784939527511597,
+      "duration_seconds" : 1.0817760229110718,
       "name" : "security.server.host-binding.qualification",
       "status" : "secured",
       "tags" : [
@@ -571,7 +571,7 @@
     },
     {
       "display_name" : "Qualify whether client response header buffering has a size limit",
-      "duration_seconds" : 0.013314008712768555,
+      "duration_seconds" : 0.014986038208007812,
       "name" : "security.client.response-header-unbounded.qualification",
       "status" : "secured",
       "tags" : [
@@ -586,7 +586,7 @@
     },
     {
       "display_name" : "Qualify HTTP\/1.1 pipelining and response ordering behavior",
-      "duration_seconds" : 0.28145503997802734,
+      "duration_seconds" : 0.2890669107437134,
       "name" : "security.server.pipelining-undefined.qualification",
       "status" : "secured",
       "tags" : [
@@ -601,7 +601,7 @@
     },
     {
       "display_name" : "Server bounds oversized unterminated request headers",
-      "duration_seconds" : 0.06329095363616943,
+      "duration_seconds" : 0.05749797821044922,
       "name" : "security.server.request-header-size.regression",
       "status" : "secured",
       "tags" : [
@@ -615,7 +615,7 @@
     },
     {
       "display_name" : "Qualify idle TCP connection lifetime",
-      "duration_seconds" : 0.33438706398010254,
+      "duration_seconds" : 0.33420801162719727,
       "name" : "security.server.idle-connection-timeout.qualification",
       "status" : "secured",
       "tags" : [
@@ -630,7 +630,7 @@
     },
     {
       "display_name" : "Qualify per-connection pipelined request backlog",
-      "duration_seconds" : 0.6374120712280273,
+      "duration_seconds" : 0.6421060562133789,
       "name" : "security.server.pipelined-backlog.qualification",
       "status" : "secured",
       "tags" : [
