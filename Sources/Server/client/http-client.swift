@@ -2,6 +2,21 @@ import Foundation
 import HTTP
 import Network
 
+private extension HTTPClientConfig.Transport {
+    var parameters: NWParameters {
+        switch self {
+        case .tcp(let security):
+            switch security {
+            case .plaintext:
+                return .tcp
+
+            case .tls:
+                return .tls
+            }
+        }
+    }
+}
+
 private actor ResponseActor: Sendable {
     var result: Result<HTTPResponse, ServerError>?
     
@@ -53,7 +68,7 @@ public struct HTTPClient: Sendable {
         let conn = NWConnection(
             host: NWEndpoint.Host(config.host),
             port: NWEndpoint.Port(rawValue: config.port)!,
-            using: .tcp
+            using: config.transport.parameters
         )
         
         log("Creating connection to \(config.host):\(config.port)")
@@ -83,6 +98,7 @@ public struct HTTPClient: Sendable {
 
         let handler = RequestConnectionHandler(
             connection: conn,
+            requestMethod: method,
             policies: config.policies,
             onSuccess: { response in
                 log(

@@ -471,7 +471,8 @@ struct SecurityTestServer: Sendable {
 final class SecurityTestPeer: @unchecked Sendable {
     private let listener: NWListener
     private let queue: DispatchQueue
-    private let payload: Data
+    private let payloads: [Data]
+    private let interPayloadDelay: TimeInterval
 
     private let lock = NSLock()
     private var connections: [NWConnection] = []
@@ -481,15 +482,31 @@ final class SecurityTestPeer: @unchecked Sendable {
     private init(
         listener: NWListener,
         queue: DispatchQueue,
-        payload: Data
+        payloads: [Data],
+        interPayloadDelay: TimeInterval
     ) {
         self.listener = listener
         self.queue = queue
-        self.payload = payload
+        self.payloads = payloads
+        self.interPayloadDelay = max(
+            0,
+            interPayloadDelay
+        )
     }
 
     static func start(
         payload: Data
+    ) async throws -> SecurityTestPeer {
+        try await start(
+            payloads: [
+                payload
+            ]
+        )
+    }
+
+    static func start(
+        payloads: [Data],
+        interPayloadDelay: TimeInterval = 0.025
     ) async throws -> SecurityTestPeer {
         let listener = try NWListener(
             using: .tcp,
@@ -505,7 +522,8 @@ final class SecurityTestPeer: @unchecked Sendable {
         let peer = SecurityTestPeer(
             listener: listener,
             queue: queue,
-            payload: payload
+            payloads: payloads,
+            interPayloadDelay: interPayloadDelay
         )
 
         let ready = SecurityOneShot<Bool>()
@@ -544,13 +562,15 @@ final class SecurityTestPeer: @unchecked Sendable {
         ) else {
             listener.cancel()
 
-            throw SecurityNetworkHarnessError.listenerDidNotBecomeReady
+            throw SecurityNetworkHarnessError
+                .listenerDidNotBecomeReady
         }
 
         guard let port = listener.port else {
             listener.cancel()
 
-            throw SecurityNetworkHarnessError.listenerHasNoPort
+            throw SecurityNetworkHarnessError
+                .listenerHasNoPort
         }
 
         peer.port = port.rawValue
@@ -563,7 +583,8 @@ final class SecurityTestPeer: @unchecked Sendable {
 
         lock.lock()
 
-        let active = connections
+        let active =
+            connections
 
         connections.removeAll()
 
@@ -589,9 +610,55 @@ final class SecurityTestPeer: @unchecked Sendable {
             queue: queue
         )
 
+        sendPayload(
+            at: 0,
+            on: connection
+        )
+    }
+
+    private func sendPayload(
+        at index: Int,
+        on connection: NWConnection
+    ) {
+        guard index < payloads.count else {
+            return
+        }
+
         connection.send(
-            content: payload,
-            completion: .contentProcessed { _ in }
+            content: payloads[index],
+            completion: .contentProcessed { [weak self] error in
+                guard let self,
+                      error == nil
+                else {
+                    return
+                }
+
+                let next =
+                    index + 1
+
+                guard next < self.payloads.count else {
+                    return
+                }
+
+                if self.interPayloadDelay == 0 {
+                    self.sendPayload(
+                        at: next,
+                        on: connection
+                    )
+
+                    return
+                }
+
+                self.queue.asyncAfter(
+                    deadline:
+                        .now() + self.interPayloadDelay
+                ) { [weak self] in
+                    self?.sendPayload(
+                        at: next,
+                        on: connection
+                    )
+                }
+            }
         )
     }
 }

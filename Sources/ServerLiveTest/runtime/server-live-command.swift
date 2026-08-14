@@ -5,6 +5,7 @@ import Server
 enum ServerLiveMode: Sendable, Equatable {
     case serve
     case test
+    case testTLS
     case bench
 }
 
@@ -32,6 +33,9 @@ struct ServerLiveCommand: Sendable {
 
         case "test":
             mode = .test
+
+        case "test-tls":
+            mode = .testTLS
 
         case "bench":
             mode = .bench
@@ -558,6 +562,8 @@ enum ServerLiveCommandError: Error, LocalizedError {
         swift run servlive test  [--host 127.0.0.1] [--port 49161]
         swift run servlive test  [--base http://127.0.0.1:49161]
 
+        swift run servlive test-tls
+
         swift run servlive bench [--max-connections N]
                                  [--path /_benchmark]
                                  [--method GET]
@@ -583,6 +589,9 @@ enum ServerLiveCommandError: Error, LocalizedError {
 
         test
             Runs all live HTTP checks against an already-running server.
+
+        test-tls
+            Runs the Server.HTTPClient system-trusted TLS live check.
 
         bench
             Runs concurrent HTTP benchmark traffic.

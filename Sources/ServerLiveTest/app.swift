@@ -41,6 +41,13 @@ struct App {
                     ok ? 0 : 1
                 )
 
+            case .testTLS:
+                let ok = await ServerLiveTLS.run()
+
+                Foundation.exit(
+                    ok ? 0 : 1
+                )
+
             case .bench:
                 let ok = await ServerLiveBenchmark.run(
                     config: command.config,

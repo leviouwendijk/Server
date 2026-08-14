@@ -57,7 +57,9 @@ public func buildValidatedWireRequest(
     )
 
     var lines: [String] = []
-    lines.append("\(method.rawValue) \(path)")
+    lines.append(
+        "\(method.rawValue) \(path) \(HTTPConstants.httpVersion)"
+    )
     lines.append(
         try HTTPWireValidation.headerLine(
             name: "Host",

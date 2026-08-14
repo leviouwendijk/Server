@@ -1,11 +1,11 @@
 import HTTP
 
 public struct ServerLimits: Sendable, Hashable, Equatable {
-    public let content: HTTPContentLengthPolicy
+    public let content: HTTPContentPolicy
     public let headers: HTTPHeaderPolicy
 
     public init(
-        content: HTTPContentLengthPolicy = .default,
+        content: HTTPContentPolicy = .default,
         headers: HTTPHeaderPolicy = HTTPHeaderPolicy.request.default
     ) {
         self.content = content

@@ -4,253 +4,518 @@ import Network
 
 final class RequestConnectionHandler: @unchecked Sendable {
     private let connection: NWConnection
-    private var buffer = Data()
+    private let requestMethod: HTTPMethod
+    private let policies: HTTPResponsePolicies
     private let onSuccess: (HTTPResponse) -> Void
     private let onError: (ServerError) -> Void
-    private var finished = false
     private let debug: Bool
-    private let policies: HTTPResponsePolicies
+
+    private var buffer = Data()
+    private var responseHead: HTTPResponse?
+    private var framing: HTTPFraming.Body?
+    private var chunkedDecoder: HTTPChunkedBody.Decoder?
+    private var finished = false
 
     init(
         connection: NWConnection,
+        requestMethod: HTTPMethod,
         policies: HTTPResponsePolicies = HTTPPolicies.response.default,
         onSuccess: @escaping (HTTPResponse) -> Void,
         onError: @escaping (ServerError) -> Void,
         debug: Bool = false
     ) {
         self.connection = connection
+        self.requestMethod = requestMethod
         self.policies = policies
         self.onSuccess = onSuccess
         self.onError = onError
         self.debug = debug
-        log("Handler initialized")
+
+        log(
+            "Handler initialized"
+        )
     }
-    
-    private func log(_ msg: String) {
-        guard debug else { return }
-        let timestamp = ISO8601DateFormatter().string(from: Date())
-        print("[\(timestamp)] RequestConnectionHandler: \(msg)")
+
+    private func log(
+        _ message: String
+    ) {
+        guard debug else {
+            return
+        }
+
+        let timestamp = ISO8601DateFormatter()
+            .string(
+                from: Date()
+            )
+
+        print(
+            "[\(timestamp)] RequestConnectionHandler: \(message)"
+        )
     }
-    
+
     private func markDone() {
-        guard !finished else { return }
+        guard !finished else {
+            return
+        }
+
         finished = true
-        log("Marked done")
+
+        log(
+            "Marked done"
+        )
     }
-    
+
+    private func failResponse(
+        _ message: String
+    ) {
+        guard !finished else {
+            return
+        }
+
+        log(
+            message
+        )
+
+        connection.cancel()
+
+        onError(
+            .responseEncodingFailed
+        )
+
+        markDone()
+    }
+
+    private func validateHeaderBufferLimit() -> Bool {
+        let marker = Data(
+            HTTPConstants.crlfCrLf.utf8
+        )
+
+        let maximum =
+            policies.headers.maximumHeaderBytes
+
+        if let range = buffer.range(
+            of: marker
+        ) {
+            guard range.lowerBound <= maximum else {
+                failResponse(
+                    "Response header exceeded configured maximum"
+                )
+
+                return false
+            }
+
+            return true
+        }
+
+        let bufferedMaximum =
+            maximum + marker.count - 1
+
+        guard buffer.count <= bufferedMaximum else {
+            failResponse(
+                "Unterminated response header exceeded configured maximum"
+            )
+
+            return false
+        }
+
+        return true
+    }
+
     private func startReceiveLoop() {
-        log("Starting receive loop")
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
-            guard let self = self else {
-                print("Handler deallocated during receive")
+        guard !finished else {
+            return
+        }
+
+        log(
+            "Starting receive loop"
+        )
+
+        connection.receive(
+            minimumIncompleteLength: 1,
+            maximumLength: 65536
+        ) { [weak self] data, _, isComplete, error in
+            guard let self else {
                 return
             }
-            
-            self.log("Received data: \(data?.count ?? 0) bytes, isComplete: \(isComplete), error: \(error?.localizedDescription ?? "none")")
-            
-            if let error = error {
-                if case .posix(let code) = error, code == .ECANCELED {
-                    self.log("Receive cancelled")
+
+            guard !self.finished else {
+                return
+            }
+
+            self.log(
+                "Received data: \(data?.count ?? 0) bytes, "
+                    + "isComplete: \(isComplete), "
+                    + "error: \(error?.localizedDescription ?? "none")"
+            )
+
+            if let error {
+                if case .posix(let code) = error,
+                   code == .ECANCELED {
+                    self.log(
+                        "Receive cancelled"
+                    )
+
                     self.connection.cancel()
                     self.markDone()
+
                     return
                 }
-                self.log("Receive error: \(error.localizedDescription)")
-                self.onError(.connectionFailed(error.localizedDescription))
+
+                self.log(
+                    "Receive error: \(error.localizedDescription)"
+                )
+
+                self.onError(
+                    .connectionFailed(
+                        error.localizedDescription
+                    )
+                )
+
                 self.markDone()
+
                 return
             }
-            
-            // if let data = data, !data.isEmpty {
-            //     self.log("Appending \(data.count) bytes to buffer (total: \(self.buffer.count + data.count))")
-            //     self.buffer.append(data)
-            //     self.processBuffer()
-            // }
 
             if let data,
                !data.isEmpty {
                 self.log(
-                    "Appending \(data.count) bytes to buffer (total: \(self.buffer.count + data.count))"
+                    "Appending \(data.count) bytes to buffer "
+                        + "(total: \(self.buffer.count + data.count))"
                 )
 
-                self.buffer.append(data)
-
-                let marker = Data(
-                    HTTPConstants.crlfCrLf.utf8
+                self.buffer.append(
+                    data
                 )
 
-                let headermax =
-                    policies.headers.maximumHeaderBytes
-
-                if let range = self.buffer.range(
-                    of: marker
-                ) {
-                    guard range.lowerBound <= headermax else {
-                        self.log(
-                            "Response header exceeded configured maximum"
-                        )
-
-                        self.connection.cancel()
-                        self.onError(
-                            .responseEncodingFailed
-                        )
-                        self.markDone()
-
-                        return
-                    }
-                } else {
-                    let bufferedmax =
-                        headermax + marker.count - 1
-
-                    guard self.buffer.count <= bufferedmax else {
-                        self.log(
-                            "Unterminated response header exceeded configured maximum"
-                        )
-
-                        self.connection.cancel()
-                        self.onError(
-                            .responseEncodingFailed
-                        )
-                        self.markDone()
-
-                        return
-                    }
+                if self.responseHead == nil,
+                   !self.validateHeaderBufferLimit() {
+                    return
                 }
-
-                self.processBuffer()
             }
-            
-            if isComplete {
-                self.log("Connection complete")
-                self.connection.cancel()
-                self.markDone()
+
+            self.processBuffer(
+                isComplete: isComplete
+            )
+
+            guard !self.finished else {
                 return
             }
-            
+
+            if isComplete {
+                self.failResponse(
+                    "Connection completed before HTTP response framing completed"
+                )
+
+                return
+            }
+
             self.startReceiveLoop()
         }
     }
-    
-    private func processBuffer() {
-        log("Processing buffer (\(buffer.count) bytes)")
-        let httpTerminator = Data("\r\n\r\n".utf8)
 
-        guard let range = buffer.range(of: httpTerminator) else {
-            log("HTTP terminator not found, waiting for more data")
+    private func processBuffer(
+        isComplete: Bool
+    ) {
+        guard !finished else {
             return
         }
 
-        let headerEnd = range.upperBound
-        log("Found HTTP terminator, headerEnd = \(headerEnd)")
+        if responseHead == nil {
+            guard parseResponseHeadIfAvailable() else {
+                return
+            }
 
-        let headerData = buffer.subdata(in: 0..<headerEnd)
+            guard !finished else {
+                return
+            }
+        }
 
-        let contentLength: Int
-        do {
-            contentLength = try HTTPFraming.extractContentLength(
-                from: headerData,
-                policy: policies.content
-            ) ?? 0
-        } catch HTTPParsingError.contentLengthTooLarge(let value, let maximumBytes) {
-            log("Response payload too large: Content-Length \(value), maximum \(maximumBytes)")
-            connection.cancel()
-            onError(.responseEncodingFailed)
-            markDone()
-            return
-        } catch {
-            log("Invalid response Content-Length: \(error.localizedDescription)")
-            connection.cancel()
-            onError(.responseEncodingFailed)
-            markDone()
+        guard let responseHead,
+              let framing
+        else {
             return
         }
 
-        log("Parsed Content-Length: \(contentLength)")
-
-        let totalNeeded = headerEnd + contentLength
-        log("Total needed: \(totalNeeded), buffer has: \(buffer.count)")
-
-        guard buffer.count >= totalNeeded else {
-            log("Buffer incomplete, need \(totalNeeded) bytes but only have \(buffer.count)")
-            return
-        }
-
-        // let headerData = buffer.subdata(in: 0..<headerEnd)
-
-        // let contentLength = HTTPResponseParser.extractContentLength(from: headerData) ?? 0
-        // log("Parsed Content-Length: \(contentLength)")
-
-        // let totalNeeded = headerEnd + contentLength
-        // log("Total needed: \(totalNeeded), buffer has: \(buffer.count)")
-
-        // guard buffer.count >= totalNeeded else {
-        //     log("Buffer incomplete, need \(totalNeeded) bytes but only have \(buffer.count)")
-        //     return
-        // }
-
-        let responseData = buffer.subdata(in: 0..<totalNeeded)
-        let responseText = String(data: responseData, encoding: .utf8) ?? ""
-
-        log("Extracted \(responseData.count) bytes, text length: \(responseText.count) chars")
-
-        buffer.removeSubrange(0..<totalNeeded)
-
-        do {
-            log(
-                "About to parse response text (\(responseText.count) chars)"
+        switch framing {
+        case .none:
+            finishResponse(
+                head: responseHead,
+                body: Data(),
+                trailers: HTTPHeaders()
             )
 
-            // let response = try HTTPResponseParser.parse(responseText)
-            // let response = try HTTPResponseParser.parse(
-            //     responseText,
-            //     headerPolicy: policies.headers
-            // )
-            let response = try HTTPResponse(
-                parsing: responseText,
+        case .contentLength(let contentLength):
+            guard contentLength >= 0,
+                  contentLength <= policies.content.maximumBytes
+            else {
+                failResponse(
+                    "Content-Length exceeds configured content policy"
+                )
+
+                return
+            }
+
+            guard buffer.count >= contentLength else {
+                return
+            }
+
+            let bodyEnd = buffer.index(
+                buffer.startIndex,
+                offsetBy: contentLength
+            )
+
+            let body = buffer.subdata(
+                in: buffer.startIndex..<bodyEnd
+            )
+
+            finishResponse(
+                head: responseHead,
+                body: body,
+                trailers: HTTPHeaders()
+            )
+
+        case .chunked:
+            guard var decoder = chunkedDecoder else {
+                failResponse(
+                    "Chunked response decoder is unavailable"
+                )
+
+                return
+            }
+
+            let incoming = buffer
+
+            buffer.removeAll(
+                keepingCapacity: true
+            )
+
+            do {
+                let progress = try decoder.receive(
+                    incoming
+                )
+
+                chunkedDecoder = decoder
+
+                switch progress {
+                case .incomplete:
+                    if isComplete {
+                        failResponse(
+                            "Connection completed before chunked body terminated"
+                        )
+                    }
+
+                case .complete(let output):
+                    finishResponse(
+                        head: responseHead,
+                        body: output.body,
+                        trailers: output.trailers
+                    )
+                }
+            } catch {
+                failResponse(
+                    "Invalid chunked response body: "
+                        + error.localizedDescription
+                )
+            }
+
+        case .closeDelimited:
+            guard buffer.count <= policies.content.maximumBytes else {
+                failResponse(
+                    "Close-delimited response exceeds configured content policy"
+                )
+
+                return
+            }
+
+            guard isComplete else {
+                return
+            }
+
+            finishResponse(
+                head: responseHead,
+                body: buffer,
+                trailers: HTTPHeaders()
+            )
+
+        case .tunnel:
+            failResponse(
+                "Successful CONNECT establishes a tunnel, "
+                    + "which HTTPClient.send cannot represent as HTTPResponse"
+            )
+        }
+    }
+
+    private func parseResponseHeadIfAvailable() -> Bool {
+        let terminator = Data(
+            HTTPConstants.crlfCrLf.utf8
+        )
+
+        guard let range = buffer.range(
+            of: terminator
+        ) else {
+            log(
+                "HTTP header terminator not found, waiting for more data"
+            )
+
+            return false
+        }
+
+        let headerEnd =
+            range.upperBound
+
+        let headerData = buffer.subdata(
+            in: buffer.startIndex..<headerEnd
+        )
+
+        guard let headerText = String(
+            data: headerData,
+            encoding: .utf8
+        ) else {
+            failResponse(
+                "HTTP response head is not valid UTF-8"
+            )
+
+            return false
+        }
+
+        do {
+            let head = try HTTPResponse(
+                parsing: headerText,
                 policies: policies
             )
 
-            log(
-                "Parsed response - status: \(response.status.code), body length: \(response.body.count)"
+            let bodyFraming = try HTTPFraming.responseBody(
+                requestMethod: requestMethod,
+                status: head.status,
+                headers: head.headers
             )
 
-            onSuccess(response)
+            responseHead = head
+            framing = bodyFraming
+
+            buffer.removeSubrange(
+                buffer.startIndex..<headerEnd
+            )
+
+            if case .chunked = bodyFraming {
+                chunkedDecoder = HTTPChunkedBody.Decoder(
+                    maximumDecodedBytes:
+                        policies.content.maximumBytes,
+                    trailerPolicy:
+                        policies.headers
+                )
+            }
+
+            log(
+                "Parsed response head: "
+                    + "status \(head.status.code), "
+                    + "framing \(bodyFraming)"
+            )
+
+            return true
         } catch {
-            onError(.responseEncodingFailed)
+            failResponse(
+                "Invalid HTTP response head/framing: "
+                    + error.localizedDescription
+            )
+
+            return false
+        }
+    }
+
+    private func finishResponse(
+        head: HTTPResponse,
+        body: Data,
+        trailers: HTTPHeaders
+    ) {
+        guard !finished else {
+            return
         }
 
-        // do {
-        //     log("About to parse response text (\(responseText.count) chars):\n\(responseText)")
-        //     let response = try HTTPResponseParser.parse(responseText)
-        //     log(
-        //         "Parsed response - status: \(response.status.code), body length: \(response.body.count), body: '\(response.body)'"
-        //     )
-        //     onSuccess(response)
-        // } catch {
-        //     onError(.responseEncodingFailed)
-        // }
+        guard body.count <= policies.content.maximumBytes else {
+            failResponse(
+                "Decoded response body exceeds configured content policy"
+            )
+
+            return
+        }
+
+        guard let bodyText = String(
+            data: body,
+            encoding: .utf8
+        ) else {
+            failResponse(
+                "HTTP response body is not valid UTF-8"
+            )
+
+            return
+        }
+
+        let response = HTTPResponse(
+            status: head.status,
+            headers: head.headers,
+            body: bodyText,
+            trailers: trailers,
+            failure: head.failure
+        )
+
+        log(
+            "Completed response: "
+                + "status \(response.status.code), "
+                + "body bytes \(body.count), "
+                + "trailers \(trailers.count)"
+        )
+
+        onSuccess(
+            response
+        )
 
         connection.cancel()
+
         markDone()
     }
 
-    func send(_ string: String) {
-        log("Sending request (\(string.count) bytes)")
-        let payload = Data(string.utf8)
-        connection.send(content: payload, completion: .contentProcessed { [weak self] error in
-            guard let self = self else {
-                print("Handler deallocated during send completion")
-                return
-            }
-            
-            if let error = error {
-                self.log("Send error: \(error.localizedDescription)")
-                self.onError(.connectionFailed(error.localizedDescription))
-            } else {
-                self.log("Send completed successfully, starting receive loop")
+    func send(
+        _ string: String
+    ) {
+        log(
+            "Sending request (\(string.utf8.count) bytes)"
+        )
+
+        let payload = Data(
+            string.utf8
+        )
+
+        connection.send(
+            content: payload,
+            completion: .contentProcessed { [weak self] error in
+                guard let self else {
+                    return
+                }
+
+                if let error {
+                    self.log(
+                        "Send error: \(error.localizedDescription)"
+                    )
+
+                    self.onError(
+                        .connectionFailed(
+                            error.localizedDescription
+                        )
+                    )
+
+                    self.markDone()
+
+                    return
+                }
+
+                self.log(
+                    "Send completed successfully, starting receive loop"
+                )
+
                 self.startReceiveLoop()
             }
-        })
+        )
     }
 }
 

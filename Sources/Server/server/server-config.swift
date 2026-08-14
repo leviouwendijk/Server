@@ -74,8 +74,17 @@ public struct ServerConfig: Sendable {
         )
     }
 
-    public var requestContentLengthPolicy: HTTPContentLengthPolicy {
+    public var requestContentPolicy: HTTPContentPolicy {
         limits.content
+    }
+
+    @available(
+        *,
+        deprecated,
+        renamed: "requestContentPolicy"
+    )
+    public var requestContentLengthPolicy: HTTPContentPolicy {
+        requestContentPolicy
     }
 
     public var requestHeaderPolicy: HTTPHeaderPolicy {
