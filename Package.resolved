@@ -52,7 +52,7 @@
       "location" : "https://github.com/leviouwendijk/HTTP.git",
       "state" : {
         "branch" : "master",
-        "revision" : "fd99803b753ea5c2ce02fc66c6f0b2fc29ce4d4a"
+        "revision" : "0e5d57f9e90670e39e0d2ae17ffd52e8d94b3b36"
       }
     },
     {
@@ -97,7 +97,7 @@
       "location" : "https://github.com/leviouwendijk/Parsers.git",
       "state" : {
         "branch" : "master",
-        "revision" : "a0ede24496d5951f734389590ff5a860ec055035"
+        "revision" : "d40af0db0f032a7fc9757db068da717c69d8fca8"
       }
     },
     {
@@ -133,7 +133,7 @@
       "location" : "https://github.com/leviouwendijk/Primitives.git",
       "state" : {
         "branch" : "master",
-        "revision" : "859c49e61ed7e78a22623fc3d2f008408b6e9a93"
+        "revision" : "f2340de96e7ecdf9487e8f19a9ed7e6bc708950c"
       }
     },
     {

@@ -36,10 +36,10 @@ public func group(
     
     let routes = builder().map { route in
         let newPath: String
-        if route.path == "/" {
+        if route.path.raw == "/" {
             newPath = "/" + prefixPath
         } else {
-            newPath = "/" + prefixPath + route.path
+            newPath = "/" + prefixPath + route.path.raw
         }
 
         var newRoute = Route(
@@ -63,7 +63,7 @@ public func group(
     let routes = builder().map { route in
         let newPath = prefix.merged(
             appending: StandardPath(
-                rawPath: route.path
+                rawPath: route.path.raw
             )
         )
 

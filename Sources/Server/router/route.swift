@@ -3,7 +3,7 @@ import HTTP
 
 public struct Route: Sendable {
     public let method: HTTPMethod
-    public let path: String
+    public let path: HTTPPath
     public let handler: @Sendable (HTTPRequest, Router) async -> HTTPResponse
     public var middleware: [Middleware] = []
     public var jsonPolicy: ServerJSONPolicy?
@@ -18,7 +18,9 @@ public struct Route: Sendable {
         handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
     ) {
         self.method = method
-        self.path = path
+        self.path = HTTPPath(
+            raw: path
+        )
         self.handler = handler
     }
     

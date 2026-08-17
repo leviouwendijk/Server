@@ -338,20 +338,6 @@ final class ServerConnectionHandler: @unchecked Sendable {
         }
     }
 
-    private func activityPath(
-        _ path: String
-    ) -> String {
-        guard let query = path.firstIndex(
-            of: "?"
-        ) else {
-            return path
-        }
-
-        return String(
-            path[..<query]
-        )
-    }
-
     private func enqueueRequest(
         _ operation: @escaping @Sendable () async -> Void
     ) {
@@ -500,9 +486,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
                         serviceName: self.config.name,
                         timestamp: finishedAt,
                         method: request.method,
-                        path: self.activityPath(
-                            request.path
-                        ),
+                        path: request.path.raw,
                         status: response.status,
                         clientDescription: String(
                             describing: self.connection.endpoint

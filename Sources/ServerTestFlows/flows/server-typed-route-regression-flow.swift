@@ -29,7 +29,7 @@ extension ServerSecurityFlows {
             )
 
             try Expect.equal(
-                typedRoute.path,
+                typedRoute.path.raw,
                 "/typed/models",
                 "typed-route.metadata.path"
             )
@@ -107,7 +107,7 @@ extension ServerSecurityFlows {
             )
 
             try Expect.equal(
-                typedRoute.path,
+                typedRoute.path.raw,
                 "/typed/override",
                 "typed-route.override.path"
             )
@@ -167,7 +167,7 @@ extension ServerSecurityFlows {
             )
 
             try Expect.equal(
-                typedRoute.path,
+                typedRoute.path.raw,
                 "/alternate/models",
                 "typed-route.reachable-override.path"
             )

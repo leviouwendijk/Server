@@ -11,6 +11,6 @@ public struct RouteSummary: Codable, ReturnableResponse {
     
     public init(from route: Route) {
         self.method = route.method.rawValue
-        self.path = route.path
+        self.path = route.path.raw
     }
 }

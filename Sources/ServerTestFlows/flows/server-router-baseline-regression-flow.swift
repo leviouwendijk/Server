@@ -385,7 +385,7 @@ extension ServerSecurityFlows {
 
             try Expect.equal(
                 routes.map {
-                    $0.path
+                    $0.path.raw
                 },
                 [
                     "/standard-path/get-handler",
@@ -415,7 +415,7 @@ extension ServerSecurityFlows {
             )
 
             try Expect.equal(
-                route.path,
+                route.path.raw,
                 "/",
                 "router-standard-path.root.path"
             )
@@ -458,7 +458,7 @@ extension ServerSecurityFlows {
                         ),
                         request: { request in
                             .text(
-                                request.path
+                                request.path.raw
                             )
                         }
                     )
@@ -467,7 +467,7 @@ extension ServerSecurityFlows {
 
             try Expect.equal(
                 grouped.routes.map {
-                    $0.path
+                    $0.path.raw
                 },
                 [
                     "/api/v1",
@@ -604,7 +604,7 @@ extension ServerSecurityFlows {
             }
 
             try Expect.equal(
-                stringGrouped.routes.first?.path,
+                stringGrouped.routes.first?.path.raw,
                 "/string/metadata" as String?,
                 "router-group-metadata.string.path"
             )
@@ -629,7 +629,7 @@ extension ServerSecurityFlows {
             )
 
             try Expect.equal(
-                standardPathGrouped.routes.first?.path,
+                standardPathGrouped.routes.first?.path.raw,
                 "/standard-path/metadata" as String?,
                 "router-group-metadata.standard-path.path"
             )

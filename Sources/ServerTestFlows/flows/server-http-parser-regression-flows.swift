@@ -33,7 +33,7 @@ extension ServerSecurityFlows {
             )
 
             try Expect.equal(
-                request.path,
+                request.path.raw,
                 "/health",
                 "request-parser.simple.path"
             )
@@ -76,9 +76,21 @@ extension ServerSecurityFlows {
             )
 
             try Expect.equal(
-                request.path,
+                request.target,
                 "/search?q=dog%20training&page=2",
+                "request-parser.query.target"
+            )
+
+            try Expect.equal(
+                request.path.raw,
+                "/search",
                 "request-parser.query.path"
+            )
+
+            try Expect.equal(
+                request.query?.raw,
+                "q=dog%20training&page=2",
+                "request-parser.query.query"
             )
         }
 
@@ -106,7 +118,7 @@ extension ServerSecurityFlows {
             )
 
             try Expect.equal(
-                request.path,
+                request.path.raw,
                 "/api/items",
                 "request-parser.post.path"
             )

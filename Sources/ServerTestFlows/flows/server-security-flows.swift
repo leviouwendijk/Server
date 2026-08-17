@@ -269,7 +269,7 @@ extension ServerSecurityFlows {
                 )
 
                 return request.method == .get
-                    && request.path == "/admin"
+                    && request.path.raw == "/admin"
             } catch {
                 return false
             }

@@ -33,7 +33,7 @@ enum ServerLiveTrace {
         return trace(
             name,
             method: request.method,
-            path: request.path,
+            path: request.path.raw,
             bodyBytes: bodyBytes,
             failureStatus: failureStatus,
             body
@@ -53,7 +53,7 @@ enum ServerLiveTrace {
         return trace(
             name,
             method: request.method,
-            path: request.path,
+            path: request.path.raw,
             bodyBytes: bodyBytes,
             failureStatus: failureStatus
         ) {

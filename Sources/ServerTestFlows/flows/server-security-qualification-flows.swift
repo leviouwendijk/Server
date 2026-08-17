@@ -499,7 +499,7 @@ extension ServerSecurityFlows {
                     parsing: raw
                 )
 
-                return request.path == "/admin/%2e%2e/public"
+                return request.path.raw == "/admin/%2e%2e/public"
             } catch {
                 return false
             }
@@ -526,7 +526,7 @@ extension ServerSecurityFlows {
                     parsing: raw
                 )
 
-                return request.path == "//admin"
+                return request.path.raw == "//admin"
             } catch {
                 return false
             }

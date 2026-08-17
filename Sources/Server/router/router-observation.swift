@@ -23,7 +23,7 @@ public extension Router {
                     route,
                     request
                 ),
-                pattern: route.path,
+                pattern: route.path.raw,
                 method: route.method,
                 synthetic: false
             )
@@ -38,7 +38,7 @@ public extension Router {
                     route,
                     request
                 ),
-                pattern: route.path,
+                pattern: route.path.raw,
                 method: route.method,
                 synthetic: true
             )
@@ -57,7 +57,7 @@ public extension Router {
 
             return RouteResult(
                 response: response,
-                pattern: route.path,
+                pattern: route.path.raw,
                 method: route.method,
                 synthetic: true
             )
@@ -71,7 +71,7 @@ public extension Router {
             response: fallback(
                 for: request
             ),
-            pattern: route?.path,
+            pattern: route?.path.raw,
             method: route?.method,
             synthetic: false
         )
