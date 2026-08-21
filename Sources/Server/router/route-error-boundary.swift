@@ -1,44 +1,106 @@
 import HTTP
 
+struct RoutePhasedError:
+    Error
+{
+    let underlying:
+        any Error
+
+    let phase:
+        RouteErrorPhase
+
+    init(
+        _ underlying: any Error,
+        phase: RouteErrorPhase
+    ) {
+        self.underlying =
+            underlying
+
+        self.phase =
+            phase
+    }
+}
+
 enum RouteErrorBoundary {
-    enum Scope: String, Sendable {
-        case typed = "typed_route"
-        case raw = "route"
+    enum Scope:
+        String,
+        Sendable
+    {
+        case typed =
+            "typed_route"
+
+        case raw =
+            "route"
     }
 
     static func response(
         for error: any Error,
         phase: RouteErrorPhase,
         scope: Scope,
-        errors: RouteErrorMapper = .none
+        errors:
+            RouteErrorMapper = .none
     ) -> HTTPResponse {
-        if let mapped = errors.response(
-            for: error,
-            phase: phase
-        ) {
+        let effectiveError:
+            any Error
+
+        let effectivePhase:
+            RouteErrorPhase
+
+        if let phased =
+            error as? RoutePhasedError
+        {
+            effectiveError =
+                phased.underlying
+
+            effectivePhase =
+                phased.phase
+        } else {
+            effectiveError =
+                error
+
+            effectivePhase =
+                phase
+        }
+
+        if let mapped =
+            errors.response(
+                for: effectiveError,
+                phase: effectivePhase
+            )
+        {
             return mapped
         }
 
-        if let reportable = error as? any HTTPReportableError {
+        if let reportable =
+            effectiveError
+                as? any HTTPReportableError
+        {
             return reportable.response()
         }
 
-        let failure = HTTPFailure(
-            code: "server.\(scope.rawValue).\(phase.rawValue)",
-            kind: phase.failureKind,
-            severity: phase.failureSeverity,
-            message: "\(phase.failureDescription(scope: scope)): \(String(reflecting: type(of: error)))"
-        )
+        let failure =
+            HTTPFailure(
+                code:
+                    "server.\(scope.rawValue).\(effectivePhase.rawValue)",
+                kind:
+                    effectivePhase.failureKind,
+                severity:
+                    effectivePhase.failureSeverity,
+                message:
+                    "\(effectivePhase.failureDescription(scope: scope)): \(String(reflecting: type(of: effectiveError)))"
+            )
 
-        switch phase {
-        case .request:
+        switch effectivePhase {
+        case .request,
+             .input:
             return HTTPResponse
                 .badRequest()
                 .reporting(
                     failure
                 )
 
-        case .handler,
+        case .operation,
+             .output,
              .response:
             return HTTPResponse
                 .internalServerError()
@@ -51,67 +113,64 @@ enum RouteErrorBoundary {
 
 private extension RouteErrorPhase {
     func failureDescription(
-        scope: RouteErrorBoundary.Scope
+        scope:
+            RouteErrorBoundary.Scope
     ) -> String {
-        switch (
-            scope,
-            self
-        ) {
-        case (
-            .typed,
-            .request
-        ):
-            "Typed route request failed"
+        let prefix: String
 
-        case (
-            .typed,
-            .handler
-        ):
-            "Typed route handler failed"
+        switch scope {
+        case .typed:
+            prefix =
+                "Typed route"
 
-        case (
-            .typed,
-            .response
-        ):
-            "Typed route response failed"
+        case .raw:
+            prefix =
+                "Route"
+        }
 
-        case (
-            .raw,
-            .request
-        ):
-            "Route request failed"
+        switch self {
+        case .request:
+            return "\(prefix) request failed"
 
-        case (
-            .raw,
-            .handler
-        ):
-            "Route handler failed"
+        case .input:
+            return "\(prefix) input failed"
 
-        case (
-            .raw,
-            .response
-        ):
-            "Route response failed"
+        case .operation:
+            return "\(prefix) operation failed"
+
+        case .output:
+            return "\(prefix) output failed"
+
+        case .response:
+            return "\(prefix) response failed"
         }
     }
 
-    var failureKind: HTTPFailureKind {
+    var failureKind:
+        HTTPFailureKind
+    {
         switch self {
-        case .request:
+        case .request,
+             .input:
             .validation
 
-        case .handler,
+        case .operation,
+             .output,
              .response:
             .internalFailure
         }
     }
 
-    var failureSeverity: HTTPFailureSeverity {
+    var failureSeverity:
+        HTTPFailureSeverity
+    {
         switch self {
-        case .request:
+        case .request,
+             .input:
             .warning
 
-        case .handler,
+        case .operation,
+             .output,
              .response:
             .error
         }

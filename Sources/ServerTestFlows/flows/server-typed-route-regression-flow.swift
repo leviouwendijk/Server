@@ -365,7 +365,7 @@ extension ServerSecurityFlows {
 
             try Expect.equal(
                 response.failure?.code,
-                "server.typed_route.handler",
+                "server.typed_route.operation",
                 "typed-route.handler-failure.code"
             )
         }

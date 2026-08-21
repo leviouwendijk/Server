@@ -1,20 +1,41 @@
 import HTTP
 
-public enum RouteErrorPhase: String, Sendable, Equatable {
-    case request // parsing
-    case handler
-    case response // rendering/construction
+public enum RouteErrorPhase:
+    String,
+    Sendable,
+    Equatable
+{
+    case request
+    case input
+    case operation
+    case output
+    case response
+
+    @available(
+        *,
+        deprecated,
+        renamed: "operation"
+    )
+    public static var handler:
+        Self
+    {
+        .operation
+    }
 }
 
-public struct RouteErrorMapper: Sendable {
+public struct RouteErrorMapper:
+    Sendable
+{
     public typealias Resolver = @Sendable (
         any Error,
         RouteErrorPhase
     ) -> HTTPResponse?
 
-    private let resolver: Resolver
+    private let resolver:
+        Resolver
 
-    public static let none = RouteErrorMapper()
+    public static let none =
+        RouteErrorMapper()
 
     public init(
         _ mappings: RouteErrorMapper...
@@ -29,10 +50,12 @@ public struct RouteErrorMapper: Sendable {
     ) {
         resolver = { error, phase in
             for mapping in mappings {
-                if let response = mapping.response(
-                    for: error,
-                    phase: phase
-                ) {
+                if let response =
+                    mapping.response(
+                        for: error,
+                        phase: phase
+                    )
+                {
                     return response
                 }
             }
@@ -42,9 +65,11 @@ public struct RouteErrorMapper: Sendable {
     }
 
     private init(
-        resolver: @escaping Resolver
+        resolver:
+            @escaping Resolver
     ) {
-        self.resolver = resolver
+        self.resolver =
+            resolver
     }
 
     public func response(
@@ -57,22 +82,33 @@ public struct RouteErrorMapper: Sendable {
         )
     }
 
-    public static func handling<Failure: Error>(
+    public static func handling<
+        Failure: Error
+    >(
         _ type: Failure.Type,
-        phase: RouteErrorPhase? = .handler,
-        _ response: @Sendable @escaping (
-            Failure
-        ) -> HTTPResponse
+        phase:
+            RouteErrorPhase? = .operation,
+        _ response:
+            @Sendable @escaping (
+                Failure
+            ) -> HTTPResponse
     ) -> RouteErrorMapper {
         RouteErrorMapper(
-            resolver: { error, currentPhase in
+            resolver: {
+                error,
+                currentPhase
+                in
+
                 if let phase,
                    phase != currentPhase
                 {
                     return nil
                 }
 
-                guard let error = error as? Failure else {
+                guard
+                    let error =
+                        error as? Failure
+                else {
                     return nil
                 }
 

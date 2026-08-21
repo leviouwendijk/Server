@@ -66,7 +66,7 @@ public extension Route {
             } catch {
                 return RouteErrorBoundary.response(
                     for: error,
-                    phase: .handler,
+                    phase: .operation,
                     scope: .typed,
                     errors: errors
                 )

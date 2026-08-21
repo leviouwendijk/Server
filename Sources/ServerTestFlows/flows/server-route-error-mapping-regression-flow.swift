@@ -284,7 +284,7 @@ extension ServerSecurityFlows {
 
             try Expect.equal(
                 response.failure?.code,
-                "server.route.handler",
+                "server.route.operation",
                 "route-error-mapping.unknown.failure"
             )
         }
