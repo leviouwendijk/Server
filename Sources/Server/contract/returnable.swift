@@ -1,13 +1,15 @@
 import Foundation
 import HTTP
 
-public protocol ReturnableResponse: Codable, Sendable {
-    func response(
-        status: HTTPStatus
-    ) throws -> HTTPResponse
-}
+public protocol Returnable:
+    Codable,
+    HTTPRespondable
+{}
 
-extension ReturnableResponse {
+public typealias ReturnableResponse =
+    Returnable
+
+extension Returnable {
     public func response(
         status: HTTPStatus = .ok
     ) throws -> HTTPResponse {

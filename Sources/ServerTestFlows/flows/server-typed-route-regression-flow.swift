@@ -1,3 +1,4 @@
+import Foundation
 import HTTP
 import Server
 import TestFlows
@@ -67,9 +68,16 @@ extension ServerSecurityFlows {
                 "typed-route.round-trip.status"
             )
 
-            try Expect.contains(
-                response.body,
-                #""echoedValue":"round-trip""#,
+            let decodedResponse = try JSONDecoder().decode(
+                TypedRouteResponse.self,
+                from: Data(
+                    response.body.utf8
+                )
+            )
+
+            try Expect.equal(
+                decodedResponse.echoedValue,
+                "round-trip",
                 "typed-route.round-trip.body"
             )
 
@@ -139,9 +147,16 @@ extension ServerSecurityFlows {
                 "typed-route.override.round-trip.status"
             )
 
-            try Expect.contains(
-                response.body,
-                #""echoedValue":"generic-round-trip""#,
+            let decodedResponse = try JSONDecoder().decode(
+                TypedRouteResponse.self,
+                from: Data(
+                    response.body.utf8
+                )
+            )
+
+            try Expect.equal(
+                decodedResponse.echoedValue,
+                "generic-round-trip",
                 "typed-route.override.round-trip.body"
             )
         }
@@ -211,9 +226,16 @@ extension ServerSecurityFlows {
                 "typed-route.router-aware.status"
             )
 
-            try Expect.contains(
-                response.body,
-                #""echoedValue":"router-aware""#,
+            let decodedResponse = try JSONDecoder().decode(
+                TypedRouteResponse.self,
+                from: Data(
+                    response.body.utf8
+                )
+            )
+
+            try Expect.equal(
+                decodedResponse.echoedValue,
+                "router-aware",
                 "typed-route.router-aware.body"
             )
         }
@@ -457,17 +479,13 @@ private struct TypedRouteRequest:
 }
 
 private struct TypedRouteExplicitRequest:
-    Decodable,
-    Sendable,
-    HTTPRequestable
+    Requestable
 {
     let value: String
 }
 
 private struct TypedRouteResponse:
-    Encodable,
-    Sendable,
-    HTTPRespondable
+    Returnable
 {
     let echoedValue: String
 }
