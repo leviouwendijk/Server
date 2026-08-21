@@ -10,6 +10,7 @@ enum ServerSecurityFlows: TestFlowRegistry {
         serverRouterBaselineRegressionFlow,
         serverTypedRouteRegressionFlow,
         serverOperationRegressionFlow,
+        serverOperationRouteRegressionFlow,
         serverRouteErrorMappingRegressionFlow,
 
         httpRequestParserRegressionFlow,
