@@ -1,3 +1,5 @@
+import HTTP
+
 public protocol ServerOperation {
     associatedtype Contract:
         ServerContract
@@ -9,7 +11,8 @@ public protocol ServerOperation {
         Contract.Response
 
     static func input(
-        from request: Contract.Request
+        from request: Contract.Request,
+        context: HTTPRequest
     ) async throws -> Input
 
     static func execute(
@@ -26,7 +29,8 @@ where
     Input == Contract.Request
 {
     static func input(
-        from request: Contract.Request
+        from request: Contract.Request,
+        context _: HTTPRequest
     ) async throws -> Input {
         request
     }

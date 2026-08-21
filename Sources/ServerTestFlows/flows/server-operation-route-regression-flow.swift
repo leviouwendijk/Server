@@ -319,6 +319,68 @@ extension ServerSecurityFlows {
             }
 
             Step(
+                "operation Input materialization can consume raw HTTP request context"
+            ) {
+                let router =
+                    Router(
+                        routes: [
+                            route(
+                                HTTPEndpoint(
+                                    method: .post,
+                                    "operations",
+                                    "context"
+                                ),
+                                operation:
+                                    OperationRouteContextAware.self
+                            ),
+                        ]
+                    )
+
+                let response =
+                    await router.route(
+                        HTTPRequest(
+                            method: .post,
+                            path:
+                                "/operations/context",
+                            headers: [
+                                "Content-Type":
+                                    "application/json",
+                                "X-Operation-Context":
+                                    "request-context-value",
+                            ],
+                            body:
+                                """
+                                {
+                                    "value": "semantic-value"
+                                }
+                                """
+                        )
+                    )
+
+                try Expect.equal(
+                    response.status.code,
+                    200,
+                    "server-operation-route.context.status"
+                )
+
+                let decoded =
+                    try JSONDecoder()
+                        .decode(
+                            OperationRouteResponse.self,
+                            from:
+                                Data(
+                                    response.body.utf8
+                                )
+                        )
+
+                try Expect.equal(
+                    decoded.value,
+                    "semantic-value|request-context-value",
+                    "server-operation-route.context.body"
+                )
+            }
+
+            Step(
                 "canonical route phases expose the five architectural boundaries"
             ) {
                 try Expect.equal(
@@ -422,6 +484,57 @@ private enum OperationRouteFailure:
     case rejected
 }
 
+private struct OperationRouteContextInput:
+    Sendable
+{
+    let value:
+        String
+
+    let requestContextValue:
+        String
+}
+
+private enum OperationRouteContextAware:
+    ServerOperation
+{
+    typealias Contract =
+        OperationRouteContract
+
+    typealias Input =
+        OperationRouteContextInput
+
+    static func input(
+        from request:
+            Contract.Request,
+        context:
+            HTTPRequest
+    ) async throws
+        -> Input
+    {
+        Input(
+            value:
+                request.value,
+            requestContextValue:
+                context.header(
+                    "X-Operation-Context"
+                )
+                ?? "missing"
+        )
+    }
+
+    static func execute(
+        _ input:
+            Input
+    ) async throws
+        -> Contract.Response
+    {
+        Contract.Response(
+            value:
+                "\(input.value)|\(input.requestContextValue)"
+        )
+    }
+}
+
 private struct OperationRoutePipelineInput:
     Sendable
 {
@@ -450,7 +563,9 @@ private enum OperationRoutePipeline:
 
     static func input(
         from request:
-            Contract.Request
+            Contract.Request,
+        context _:
+            HTTPRequest
     ) async throws
         -> Input
     {

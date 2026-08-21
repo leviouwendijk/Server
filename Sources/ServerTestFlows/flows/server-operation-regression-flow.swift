@@ -1,3 +1,4 @@
+import HTTP
 import Server
 import TestFlows
 
@@ -130,7 +131,9 @@ private enum PipelineServerOperation:
 
     static func input(
         from request:
-            Contract.Request
+            Contract.Request,
+        context _:
+            HTTPRequest
     ) async throws
         -> Input
     {
@@ -168,7 +171,14 @@ private enum PipelineServerOperation:
 private func executeOperation<Operation>(
     _ type: Operation.Type,
     request:
-        Operation.Contract.Request
+        Operation.Contract.Request,
+    context:
+        HTTPRequest = HTTPRequest(
+            method: .post,
+            path: "/operation-regression",
+            headers: [:],
+            body: ""
+        )
 ) async throws
     -> Operation.Contract.Response
 where
@@ -177,7 +187,8 @@ where
 {
     let input =
         try await type.input(
-            from: request
+            from: request,
+            context: context
         )
 
     let output =

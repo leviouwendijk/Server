@@ -18,14 +18,15 @@ where
             Operation.Contract.Request.self,
         errors:
             errors
-    ) { request, _ in
+    ) { request, httpRequest, _ in
         let input:
             Operation.Input
 
         do {
             input =
                 try await Operation.input(
-                    from: request
+                    from: request,
+                    context: httpRequest
                 )
         } catch {
             throw RoutePhasedError(

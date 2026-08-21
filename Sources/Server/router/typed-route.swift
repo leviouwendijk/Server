@@ -15,6 +15,32 @@ public extension Route {
         Response: HTTPRespondable
     {
         typed(
+            endpoint,
+            request: request,
+            errors: errors
+        ) { request, _, router in
+            try await handler(
+                request,
+                router
+            )
+        }
+    }
+
+    static func typed<Request, Response>(
+        _ endpoint: HTTPEndpoint,
+        request: Request.Type,
+        errors: RouteErrorMapper = .none,
+        handler: @Sendable @escaping (
+            Request,
+            HTTPRequest,
+            Router
+        ) async throws -> Response
+    ) -> Route
+    where
+        Request: HTTPRequestable,
+        Response: HTTPRespondable
+    {
+        typed(
             Endpoint<Request, Response>(
                 endpoint
             ),
@@ -30,6 +56,30 @@ public extension Route {
         errors: RouteErrorMapper = .none,
         handler: @Sendable @escaping (
             Input,
+            Router
+        ) async throws -> Output
+    ) -> Route
+    where
+        Input: HTTPRequestable,
+        Output: HTTPRespondable
+    {
+        typed(
+            endpoint,
+            errors: errors
+        ) { input, _, router in
+            try await handler(
+                input,
+                router
+            )
+        }
+    }
+
+    static func typed<Input, Output>(
+        _ endpoint: Endpoint<Input, Output>,
+        errors: RouteErrorMapper = .none,
+        handler: @Sendable @escaping (
+            Input,
+            HTTPRequest,
             Router
         ) async throws -> Output
     ) -> Route
@@ -61,6 +111,7 @@ public extension Route {
             do {
                 output = try await handler(
                     input,
+                    httpRequest,
                     router
                 )
             } catch {
