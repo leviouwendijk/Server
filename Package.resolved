@@ -1,5 +1,5 @@
 {
-  "originHash" : "ee8f83bde163dfa730d406744f437173b5ada5cdd56c0b9adcc45cdd2555fc1d",
+  "originHash" : "ee2e33e0f9de3dbb43be58a0decff9577e4d1430f94e4842395541ef1729dfb2",
   "pins" : [
     {
       "identity" : "ansi",
@@ -151,7 +151,7 @@
       "location" : "https://github.com/leviouwendijk/Path.git",
       "state" : {
         "branch" : "master",
-        "revision" : "95fefcdcb3b27fac6163cc998911fcc8a223ccf1"
+        "revision" : "ffdb8ed2a6c88edff8edadb874aa84030afcb65b"
       }
     },
     {
@@ -169,7 +169,16 @@
       "location" : "https://github.com/leviouwendijk/Primitives.git",
       "state" : {
         "branch" : "master",
-        "revision" : "d9618666777170ca8d58489d8e4b344232a1f6a7"
+        "revision" : "00079f74ba0b5a40598c1f8a7bb536306ec6c04e"
+      }
+    },
+    {
+      "identity" : "processes",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/leviouwendijk/Processes.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "fd80e207fa60faed206d51c14bac570aa033e2e7"
       }
     },
     {
@@ -200,6 +209,24 @@
       }
     },
     {
+      "identity" : "swift-subprocess",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-subprocess.git",
+      "state" : {
+        "revision" : "b3937ab85dd32f6e9435914599c1519074769c1a",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "swift-system",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-system.git",
+      "state" : {
+        "revision" : "869129b7bf4ecc57b97d0193ad29690ca2134750",
+        "version" : "1.8.1"
+      }
+    },
+    {
       "identity" : "terminal",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/leviouwendijk/Terminal.git",
@@ -214,7 +241,7 @@
       "location" : "https://github.com/leviouwendijk/TestFlows.git",
       "state" : {
         "branch" : "master",
-        "revision" : "ef72deb44f924372959189d0c258c5cf7e2ba8ae"
+        "revision" : "7d56906b4eb334be0ce3c43436772599260e6d1f"
       }
     },
     {

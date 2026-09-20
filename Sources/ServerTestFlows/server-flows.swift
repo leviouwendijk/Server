@@ -20,6 +20,7 @@ enum ServerSecurityFlows: TestFlowRegistry {
         securityNetworkHarnessRegressionFlow,
         serverProductionWireRegressionFlow,
         serverExecutionTimeoutRegressionFlow,
+        serverExternalProcessIntegrationFlow,
         serverLifecycleTerminationRegressionFlow,
 
         outboundClientRequestCRLFInjection,
