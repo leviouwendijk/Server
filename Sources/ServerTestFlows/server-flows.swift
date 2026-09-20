@@ -8,6 +8,7 @@ enum ServerSecurityFlows: TestFlowRegistry {
         serverRequestContextFlow,
         serverJSONCodingFlow,
         serverRouterBaselineRegressionFlow,
+        serverProtocolCorrectnessRegressionFlow,
         serverTypedRouteRegressionFlow,
         serverOperationRegressionFlow,
         serverOperationRouteRegressionFlow,

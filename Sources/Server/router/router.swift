@@ -81,6 +81,88 @@ public struct Router: Sendable {
         }
     }
 
+    func allowedMethods(
+        for path: HTTPPath
+    ) -> [HTTPMethod] {
+        let routesAtPath = routes.filter {
+            $0.path == path
+        }
+
+        guard !routesAtPath.isEmpty else {
+            return []
+        }
+
+        var allowed = Set<HTTPMethod>()
+
+        for route in routesAtPath {
+            if methods.contains(
+                route.method
+            ) {
+                allowed.insert(
+                    route.method
+                )
+            }
+
+            for syntheticMethod in route.syntheticMethods
+            where methods.contains(
+                syntheticMethod
+            ) {
+                allowed.insert(
+                    syntheticMethod
+                )
+            }
+        }
+
+        if methods.contains(
+            .options
+        ) {
+            allowed.insert(
+                .options
+            )
+        }
+
+        return allowed.sorted {
+            $0.rawValue < $1.rawValue
+        }
+    }
+
+    func methodNotAllowedResponse(
+        for request: HTTPRequest
+    ) -> HTTPResponse {
+        let allow = allowedMethods(
+            for: request.path
+        )
+        .map(\.rawValue)
+        .joined(
+            separator: ", "
+        )
+
+        return .methodNotAllowed(
+            body: "Method \(request.method.rawValue) not allowed for \(request.path)",
+            headers: [
+                "Allow": allow,
+            ]
+        )
+    }
+
+    func optionsResponse(
+        for path: HTTPPath
+    ) -> HTTPResponse {
+        let allow = allowedMethods(
+            for: path
+        )
+        .map(\.rawValue)
+        .joined(
+            separator: ", "
+        )
+
+        return .noContent(
+            headers: [
+                "Allow": allow,
+            ]
+        )
+    }
+
     func fallback(
         for request: HTTPRequest
     ) -> HTTPResponse {
@@ -89,8 +171,8 @@ public struct Router: Sendable {
         }
 
         if hasPath {
-            return .methodNotAllowed(
-                body: "Method \(request.method.rawValue) not allowed for \(request.path)"
+            return methodNotAllowedResponse(
+                for: request
             )
         }
 

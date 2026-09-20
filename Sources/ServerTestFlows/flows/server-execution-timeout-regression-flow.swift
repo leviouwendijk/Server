@@ -5,7 +5,7 @@ import TestFlows
 extension ServerSecurityFlows {
     static let serverExecutionTimeoutRegressionFlow = TestFlow(
         "server.execution-timeout.regression",
-        title: "Configured route execution deadline returns Gateway Timeout",
+        title: "Configured route execution deadline returns Service Unavailable",
         tags: [
             "execution",
             "regression",
@@ -14,7 +14,7 @@ extension ServerSecurityFlows {
         ]
     ) {
         Step(
-            "configured execution deadline returns 504 before a slow route completes"
+            "configured execution deadline returns 503 before a slow route completes"
         ) {
             let server = try await SecurityTestServer.start(
                 timeouts: ServerTimeouts(
@@ -69,7 +69,7 @@ extension ServerSecurityFlows {
                     await connection.receive(
                         until: {
                             $0.contains(
-                                "HTTP/1.1 504"
+                                "HTTP/1.1 503"
                             )
                         },
                         timeout: 0.5
@@ -77,9 +77,9 @@ extension ServerSecurityFlows {
 
                 try Expect.true(
                     response?.contains(
-                        "HTTP/1.1 504"
+                        "HTTP/1.1 503"
                     ) == true,
-                    "execution-timeout.gateway-timeout"
+                    "execution-timeout.service-unavailable"
                 )
             } catch {
                 connection.cancel()

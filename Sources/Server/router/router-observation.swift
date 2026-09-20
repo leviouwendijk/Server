@@ -4,13 +4,19 @@ public extension Router {
     func observed(
         _ request: HTTPRequest
     ) async -> RouteResult {
-        guard methods.contains(request.method) else {
+        let routeAtPath = routes.first {
+            $0.path == request.path
+        }
+
+        guard methods.contains(
+            request.method
+        ) else {
             return RouteResult(
-                response: .methodNotAllowed(
-                    body: "Method \(request.method.rawValue) is disabled by server policy"
+                response: fallback(
+                    for: request
                 ),
-                pattern: nil,
-                method: nil,
+                pattern: routeAtPath?.path.raw,
+                method: routeAtPath?.method,
                 synthetic: false
             )
         }
@@ -44,6 +50,18 @@ public extension Router {
             )
         }
 
+        if request.method == .options,
+           routeAtPath != nil {
+            return RouteResult(
+                response: optionsResponse(
+                    for: request.path
+                ),
+                pattern: routeAtPath?.path.raw,
+                method: .options,
+                synthetic: true
+            )
+        }
+
         if request.method == .head,
            let route = syntheticHeadRoute(
                for: request
@@ -63,16 +81,12 @@ public extension Router {
             )
         }
 
-        let route = routes.first {
-            $0.path == request.path
-        }
-
         return RouteResult(
             response: fallback(
                 for: request
             ),
-            pattern: route?.path.raw,
-            method: route?.method,
+            pattern: routeAtPath?.path.raw,
+            method: routeAtPath?.method,
             synthetic: false
         )
     }

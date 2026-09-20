@@ -162,7 +162,7 @@ final class SecurityTestConnection: @unchecked Sendable {
     }
 
     func start(
-        timeout: TimeInterval = 1
+        timeout: TimeInterval = 3
     ) async -> Bool {
         let result = SecurityOneShot<Bool>()
 

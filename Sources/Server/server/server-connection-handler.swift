@@ -243,8 +243,8 @@ final class ServerConnectionHandler: @unchecked Sendable {
 
                 enqueueResponse(
                     HTTPResponse(
-                        status: .payloadTooLarge,
-                        body: "Payload Too Large"
+                        status: .contentTooLarge,
+                        body: "Content Too Large"
                     ),
                     closeAfterSend: true
                 )
@@ -462,8 +462,8 @@ final class ServerConnectionHandler: @unchecked Sendable {
 
                     result = RouteResult(
                         response: HTTPResponse(
-                            status: .gatewayTimeout,
-                            body: "Gateway Timeout"
+                            status: .serviceUnavailable,
+                            body: "Service Unavailable"
                         ),
                         pattern: nil,
                         method: request.method,
@@ -515,43 +515,6 @@ final class ServerConnectionHandler: @unchecked Sendable {
                     closeAfterSend: closeAfterSend
                 )
             }
-        } catch HTTPParsingError.headerSectionTooLarge(_),
-                HTTPParsingError.headerLineTooLarge(_, _),
-                HTTPParsingError.tooManyHeaders(_) {
-            enqueueResponse(
-                HTTPResponse(
-                    status: .requestHeaderFieldsTooLarge,
-                    body: "Request Header Fields Too Large"
-                ),
-                closeAfterSend: true
-            )
-        } catch HTTPValidationError.requestTargetTooLong(_) {
-            enqueueResponse(
-                HTTPResponse(
-                    status: .uriTooLong,
-                    body: "URI Too Long"
-                ),
-                closeAfterSend: true
-            )
-        } catch HTTPValidationError.ambiguousRequestTarget(_) {
-            enqueueResponse(
-                HTTPResponse.badRequest(
-                    body: "Ambiguous request target"
-                ),
-                closeAfterSend: true
-            )
-        } catch HTTPValidationError.forbiddenHeader(let name) {
-            log(
-                "Forbidden request header rejected: \(name)",
-                level: .debug
-            )
-
-            enqueueResponse(
-                HTTPResponse.badRequest(
-                    body: "Forbidden request header"
-                ),
-                closeAfterSend: true
-            )
         } catch {
             log(
                 "Invalid request rejected: \(error.localizedDescription)",
@@ -559,12 +522,80 @@ final class ServerConnectionHandler: @unchecked Sendable {
             )
 
             enqueueResponse(
-                HTTPResponse.badRequest(
-                    body: "Invalid request"
+                requestErrorResponse(
+                    for: error
                 ),
                 closeAfterSend: true
             )
         }
+    }
+
+    private func requestErrorResponse(
+        for error: Error
+    ) -> HTTPResponse {
+        if let validationError = error as? HTTPValidationError {
+            switch validationError {
+            case .unsupportedMethod:
+                return HTTPResponse(
+                    status: .notImplemented,
+                    body: "Not Implemented"
+                )
+
+            case .unsupportedHTTPVersion:
+                return HTTPResponse(
+                    status: .httpVersionNotSupported,
+                    body: "HTTP Version Not Supported"
+                )
+
+            case .requestTargetTooLong:
+                return HTTPResponse(
+                    status: .uriTooLong,
+                    body: "URI Too Long"
+                )
+
+            case .contentLengthTooLarge,
+                 .contentTooLarge:
+                return HTTPResponse(
+                    status: .contentTooLarge,
+                    body: "Content Too Large"
+                )
+
+            default:
+                return .badRequest(
+                    body: "Bad Request"
+                )
+            }
+        }
+
+        if let parsingError = error as? HTTPParsingError {
+            switch parsingError {
+            case .headerSectionTooLarge,
+                 .headerLineTooLarge,
+                 .tooManyHeaders,
+                 .chunkTrailerSectionTooLarge,
+                 .tooManyChunkTrailers:
+                return HTTPResponse(
+                    status: .requestHeaderFieldsTooLarge,
+                    body: "Request Header Fields Too Large"
+                )
+
+            case .contentLengthTooLarge,
+                 .contentTooLarge:
+                return HTTPResponse(
+                    status: .contentTooLarge,
+                    body: "Content Too Large"
+                )
+
+            default:
+                return .badRequest(
+                    body: "Bad Request"
+                )
+            }
+        }
+
+        return .badRequest(
+            body: "Bad Request"
+        )
     }
 
     private func beginHeadersIfNeeded() {

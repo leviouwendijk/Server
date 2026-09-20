@@ -424,7 +424,7 @@ extension ServerSecurityFlows {
 
             try Expect.equal(
                 response.status.reason,
-                "Success",
+                "OK",
                 "response-parser.simple.status-reason"
             )
 
