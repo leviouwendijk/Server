@@ -62,6 +62,23 @@ public struct TestClient {
     ) async throws -> HTTPResponse {
         try await client.patch(path, body: body, headers: headers, auth: auth)
     }
+
+    /// Make a QUERY request
+    public func query(
+        _ path: String,
+        body: String,
+        contentType: String,
+        headers: [String: String] = [:],
+        auth: RequestAuth = .none
+    ) async throws -> HTTPResponse {
+        try await client.query(
+            path,
+            body: body,
+            contentType: contentType,
+            headers: headers,
+            auth: auth
+        )
+    }
     
     // MARK: - Convenience Static Methods
     
@@ -124,5 +141,29 @@ public struct TestClient {
     ) async throws -> HTTPResponse {
         let client = TestClient.withDefaults(host: host, port: port)
         return try await client.patch(path, body: body, headers: headers, auth: auth)
+    }
+
+    /// Make a QUERY request with default client configuration
+    public static func query(
+        _ path: String,
+        body: String,
+        contentType: String,
+        headers: [String: String] = [:],
+        host: String = "127.0.0.1",
+        port: UInt16 = 9090,
+        auth: RequestAuth = .none
+    ) async throws -> HTTPResponse {
+        let client = TestClient.withDefaults(
+            host: host,
+            port: port
+        )
+
+        return try await client.query(
+            path,
+            body: body,
+            contentType: contentType,
+            headers: headers,
+            auth: auth
+        )
     }
 }

@@ -8,6 +8,12 @@ public struct Route: Sendable {
     public var middleware: [Middleware] = []
     public var jsonPolicy: ServerJSONPolicy?
 
+    /// Query media ranges supported by this resource when this is a QUERY route.
+    ///
+    /// Router uses this as the canonical source for both QUERY request
+    /// validation and Accept-Query response discovery.
+    public var acceptedQuery: HTTPAcceptQuery?
+
     /// Extra methods that are allowed to "ride" this route
     /// (e.g. OPTIONS riding POST, HEAD riding GET).
     public var syntheticMethods: Set<HTTPMethod> = []
@@ -50,6 +56,14 @@ public struct Route: Sendable {
         return self.use(middleware)
     }
 
+    public func acceptQuery(
+        _ acceptedQuery: HTTPAcceptQuery
+    ) -> Route {
+        var copy = self
+        copy.acceptedQuery = acceptedQuery
+        return copy
+    }
+
     public func allow(_ methods: [HTTPMethod]) -> Route {
         var copy = self
         copy.syntheticMethods.formUnion(methods)
@@ -88,6 +102,16 @@ extension Array where Element == Route {
     public func use(_ middleware: [Middleware]?) throws -> [Route] {
         guard let middleware else { throw RouteError.invalidMiddleware }
         return use(middleware)
+    }
+
+    public func acceptQuery(
+        _ acceptedQuery: HTTPAcceptQuery
+    ) -> [Route] {
+        map {
+            $0.acceptQuery(
+                acceptedQuery
+            )
+        }
     }
 
     public func allow(_ methods: [HTTPMethod]) -> [Route] {

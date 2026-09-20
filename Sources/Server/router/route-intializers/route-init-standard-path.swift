@@ -187,6 +187,43 @@ public func patch(
     }
 }
 
+public func query(
+    _ path: StandardPath,
+    handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .query,
+        path: path,
+        handler: handler
+    )
+}
+
+public func query(
+    _ path: StandardPath,
+    request: @Sendable @escaping (HTTPRequest) async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .query,
+        path: path
+    ) { requestValue, _ in
+        await request(
+            requestValue
+        )
+    }
+}
+
+public func query(
+    _ path: StandardPath,
+    body: @Sendable @escaping () async -> HTTPResponse
+) -> Route {
+    Route(
+        method: .query,
+        path: path
+    ) { _, _ in
+        await body()
+    }
+}
+
 public func post(
     _ path: StandardPath,
     handler: @Sendable @escaping (HTTPRequest, Router) async -> HTTPResponse

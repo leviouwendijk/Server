@@ -183,6 +183,172 @@ public struct HTTPClient: Sendable {
         return try (await responseActor.getResult())!.get()
     }
 
+    /// Send one HTTP request and expose the decoded response incrementally.
+    ///
+    /// HTTP framing is removed before body events are emitted. The configured
+    /// timeout remains a total request deadline, matching `send`.
+    public func stream(
+        method: HTTPMethod,
+        path: String,
+        headers: [String: String] = [:],
+        body: String? = nil,
+        auth: RequestAuth = .none
+    ) throws -> AsyncThrowingStream<HTTPClientStreamEvent, Error> {
+        @Sendable
+        func timestamp() -> String {
+            let fmt = ISO8601DateFormatter()
+            return fmt.string(
+                from: Date()
+            )
+        }
+
+        @Sendable
+        func log(
+            _ message: String
+        ) {
+            if config.debug {
+                print(
+                    "[\(timestamp())] HTTPClient: \(message)"
+                )
+            }
+        }
+
+        var allHeaders = headers
+
+        switch auth {
+        case .none:
+            break
+
+        case .bearer(let token):
+            allHeaders["Authorization"] =
+                "Bearer \(token)"
+
+        case .custom(let key, let value):
+            allHeaders[key] =
+                value
+        }
+
+        let wire = try buildWireRequest(
+            host: config.host,
+            method: method,
+            path: path,
+            headers: allHeaders,
+            body: body
+        )
+
+        let timeoutNanoseconds = UInt64(
+            max(
+                0,
+                config.timeout
+            ) * 1_000_000_000
+        )
+
+        return AsyncThrowingStream { continuation in
+            let conn = NWConnection(
+                host: NWEndpoint.Host(
+                    config.host
+                ),
+                port: NWEndpoint.Port(
+                    rawValue: config.port
+                )!,
+                using: config.transport.parameters
+            )
+
+            let handler = RequestConnectionHandler(
+                connection: conn,
+                requestMethod: method,
+                policies: config.policies,
+                onSuccess: { response in
+                    log(
+                        "Streaming response completed: "
+                            + "\(response.status.code)"
+                    )
+
+                    continuation.finish()
+                },
+                onError: { error in
+                    log(
+                        "Streaming response failed: \(error)"
+                    )
+
+                    continuation.finish(
+                        throwing: error
+                    )
+                },
+                onStreamEvent: { event in
+                    continuation.yield(
+                        event
+                    )
+                },
+                debug: config.debug
+            )
+
+            continuation.onTermination = { @Sendable _ in
+                handler.cancel()
+            }
+
+            conn.stateUpdateHandler = { state in
+                log(
+                    "Streaming connection state: \(state)"
+                )
+
+                switch state {
+                case .ready:
+                    handler.send(
+                        wire
+                    )
+
+                case .failed(let error):
+                    continuation.finish(
+                        throwing: ServerError.connectionFailed(
+                            error.localizedDescription
+                        )
+                    )
+
+                    handler.cancel()
+
+                default:
+                    break
+                }
+            }
+
+            conn.start(
+                queue: DispatchQueue(
+                    label: "http-client-stream-\(UUID().uuidString)"
+                )
+            )
+
+            Task {
+                try? await Task.sleep(
+                    nanoseconds: timeoutNanoseconds
+                )
+
+                continuation.finish(
+                    throwing: ServerError.connectionFailed(
+                        "Request timed out"
+                    )
+                )
+
+                handler.cancel()
+            }
+        }
+    }
+
+    public func stream<Input, Output>(
+        _ endpoint: Endpoint<Input, Output>,
+        headers: [String: String] = [:],
+        body: String? = nil,
+        auth: RequestAuth = .none
+    ) throws -> AsyncThrowingStream<HTTPClientStreamEvent, Error> {
+        try stream(
+            method: endpoint.method,
+            path: endpoint.path,
+            headers: headers,
+            body: body,
+            auth: auth
+        )
+    }
+
     public func send<Input, Output>(
         _ endpoint: Endpoint<Input, Output>,
         headers: [String: String] = [:],
@@ -239,5 +405,37 @@ public struct HTTPClient: Sendable {
         auth: RequestAuth = .none
     ) async throws -> HTTPResponse {
         try await send(method: .patch, path: path, headers: headers, body: body, auth: auth)
+    }
+
+    public func query(
+        _ path: String,
+        body: String,
+        contentType: String,
+        headers: [String: String] = [:],
+        auth: RequestAuth = .none
+    ) async throws -> HTTPResponse {
+        var headers = headers
+
+        let existingContentTypeKeys = headers.keys.filter {
+            $0.caseInsensitiveCompare(
+                "Content-Type"
+            ) == .orderedSame
+        }
+
+        for key in existingContentTypeKeys {
+            headers.removeValue(
+                forKey: key
+            )
+        }
+
+        headers["Content-Type"] = contentType
+
+        return try await send(
+            method: .query,
+            path: path,
+            headers: headers,
+            body: body,
+            auth: auth
+        )
     }
 }

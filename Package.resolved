@@ -88,7 +88,7 @@
       "location" : "https://github.com/leviouwendijk/HTTP.git",
       "state" : {
         "branch" : "master",
-        "revision" : "57249594122a70f96176b41b3f30d75fc1e5c454"
+        "revision" : "252d5b1f9a463e412a8f6d9ae37920582e2bb404"
       }
     },
     {
@@ -169,7 +169,7 @@
       "location" : "https://github.com/leviouwendijk/Primitives.git",
       "state" : {
         "branch" : "master",
-        "revision" : "f4bd43babfb6be844cadb506a0e0488753cd5712"
+        "revision" : "d9618666777170ca8d58489d8e4b344232a1f6a7"
       }
     },
     {

@@ -49,6 +49,7 @@ public func group(
         )
         newRoute.middleware       = route.middleware
         newRoute.jsonPolicy       = route.jsonPolicy
+        newRoute.acceptedQuery    = route.acceptedQuery
         newRoute.syntheticMethods = route.syntheticMethods
         return newRoute
     }
@@ -74,6 +75,7 @@ public func group(
         )
         newRoute.middleware       = route.middleware
         newRoute.jsonPolicy       = route.jsonPolicy
+        newRoute.acceptedQuery    = route.acceptedQuery
         newRoute.syntheticMethods = route.syntheticMethods
         return newRoute
     }

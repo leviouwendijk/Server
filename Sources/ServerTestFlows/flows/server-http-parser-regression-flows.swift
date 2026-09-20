@@ -607,7 +607,7 @@ extension ServerSecurityFlows {
 
             try Expect.equal(
                 parsed.body,
-                "hello\n",
+                "hello",
                 "response-parser.builder-roundtrip.body"
             )
         }

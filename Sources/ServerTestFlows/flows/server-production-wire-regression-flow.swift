@@ -179,7 +179,13 @@ private func productionWireResponse(
     }
 
     let raw = await connection.receive(
-        until: predicate,
+        until: { value in
+            productionWireResponseIsComplete(
+                value
+            ) && predicate(
+                value
+            )
+        },
         timeout: timeout
     ) ?? ""
 
@@ -278,6 +284,34 @@ private func productionRawResponse(
     ].joined(
         separator: "\r\n"
     ) + "\r\n\r\n" + body
+}
+
+private func productionWireResponseIsComplete(
+    _ raw: String
+) -> Bool {
+    guard let separator = raw.range(
+        of: "\r\n\r\n"
+    ) else {
+        return false
+    }
+
+    let headerData = Data(
+        raw[..<separator.upperBound].utf8
+    )
+
+    guard let contentLength = HTTPResponse.extractContentLength(
+        from: headerData
+    ),
+    contentLength >= 0
+    else {
+        return false
+    }
+
+    let bodyByteCount = raw[
+        separator.upperBound...
+    ].utf8.count
+
+    return bodyByteCount >= contentLength
 }
 
 private func productionWireCORS() -> CORSMiddleware {
@@ -662,8 +696,6 @@ extension ServerSecurityFlows {
                     until: {
                         $0.contains(
                             "Missing or invalid Authorization header."
-                        ) && $0.hasSuffix(
-                            "\n"
                         )
                     }
                 )
@@ -696,8 +728,6 @@ extension ServerSecurityFlows {
                     until: {
                         $0.contains(
                             "Invalid API token"
-                        ) && $0.hasSuffix(
-                            "\n"
                         )
                     }
                 )
@@ -731,8 +761,6 @@ extension ServerSecurityFlows {
                     until: {
                         $0.contains(
                             "café-βeta-protected"
-                        ) && $0.hasSuffix(
-                            "\n"
                         )
                     }
                 )
@@ -785,8 +813,6 @@ extension ServerSecurityFlows {
                     until: {
                         $0.contains(
                             "production rate limited"
-                        ) && $0.hasSuffix(
-                            "\n"
                         )
                     }
                 )
@@ -846,8 +872,6 @@ extension ServerSecurityFlows {
                     until: {
                         $0.contains(
                             "invalid application payload"
-                        ) && $0.hasSuffix(
-                            "\n"
                         )
                     }
                 )
@@ -960,8 +984,6 @@ extension ServerSecurityFlows {
                     until: {
                         $0.contains(
                             "END-OF-LARGE-JSON"
-                        ) && $0.hasSuffix(
-                            "\n"
                         )
                     }
                 )
@@ -1195,7 +1217,9 @@ extension ServerSecurityFlows {
                 let rawResponse = await connection.receive(
                     until: {
                         $0.contains(
-                            "END-OF-LARGE-RESPONSE\n"
+                            "END-OF-LARGE-RESPONSE"
+                        ) && productionWireResponseIsComplete(
+                            $0
                         )
                     },
                     timeout: 3
@@ -1215,7 +1239,7 @@ extension ServerSecurityFlows {
 
                 try Expect.equal(
                     response.body,
-                    body + "\n",
+                    body,
                     "production-wire.server-response.body"
                 )
             }
