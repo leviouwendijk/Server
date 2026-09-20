@@ -35,7 +35,7 @@ extension ServerSecurityFlows {
 
                     case .invalidInput:
                         HTTPResponse(
-                            status: .unprocessableEntity,
+                            status: .unprocessableContent,
                             body: "Invalid input"
                         )
                     }
@@ -134,7 +134,7 @@ extension ServerSecurityFlows {
                     phase: .request
                 ) { _ in
                     HTTPResponse(
-                        status: .unprocessableEntity,
+                        status: .unprocessableContent,
                         body: "Request could not be interpreted"
                     )
                 }

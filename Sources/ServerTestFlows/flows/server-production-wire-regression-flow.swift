@@ -825,7 +825,7 @@ extension ServerSecurityFlows {
                             return .ok()
                         } catch {
                             return HTTPResponse(
-                                status: .unprocessableEntity,
+                                status: .unprocessableContent,
                                 body: "invalid application payload"
                             )
                         }

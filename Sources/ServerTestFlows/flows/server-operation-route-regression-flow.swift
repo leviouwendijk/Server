@@ -154,7 +154,7 @@ extension ServerSecurityFlows {
                         ) { _ in
                             HTTPResponse(
                                 status:
-                                    .unprocessableEntity,
+                                    .unprocessableContent,
                                 body:
                                     "Mapped input failure"
                             )
