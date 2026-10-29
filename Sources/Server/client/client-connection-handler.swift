@@ -8,12 +8,14 @@ final class RequestConnectionHandler: @unchecked Sendable {
     private let policies: HTTPResponsePolicies
     private let onSuccess: (HTTPResponse) -> Void
     private let onError: (ServerError) -> Void
+    private let onStreamEvent: ((HTTPClientStreamEvent) -> Void)?
     private let debug: Bool
 
     private var buffer = Data()
     private var responseHead: HTTPResponse?
     private var framing: HTTPFraming.Body?
     private var chunkedDecoder: HTTPChunkedBody.Decoder?
+    private var streamedBodyByteCount = 0
     private var finished = false
 
     init(
@@ -22,6 +24,7 @@ final class RequestConnectionHandler: @unchecked Sendable {
         policies: HTTPResponsePolicies = HTTPPolicies.response.default,
         onSuccess: @escaping (HTTPResponse) -> Void,
         onError: @escaping (ServerError) -> Void,
+        onStreamEvent: ((HTTPClientStreamEvent) -> Void)? = nil,
         debug: Bool = false
     ) {
         self.connection = connection
@@ -29,6 +32,7 @@ final class RequestConnectionHandler: @unchecked Sendable {
         self.policies = policies
         self.onSuccess = onSuccess
         self.onError = onError
+        self.onStreamEvent = onStreamEvent
         self.debug = debug
 
         log(
@@ -255,6 +259,14 @@ final class RequestConnectionHandler: @unchecked Sendable {
                 return
             }
 
+            emitBodyDelta(
+                buffer,
+                through: min(
+                    buffer.count,
+                    contentLength
+                )
+            )
+
             guard buffer.count >= contentLength else {
                 return
             }
@@ -290,25 +302,47 @@ final class RequestConnectionHandler: @unchecked Sendable {
             )
 
             do {
-                let progress = try decoder.receive(
+                let events = try decoder.receiveStreaming(
                     incoming
                 )
 
                 chunkedDecoder = decoder
 
-                switch progress {
-                case .incomplete:
-                    if isComplete {
-                        failResponse(
-                            "Connection completed before chunked body terminated"
-                        )
-                    }
+                var completed = false
 
-                case .complete(let output):
+                for event in events {
+                    switch event {
+                    case .body(let data):
+                        onStreamEvent?(
+                            .body(
+                                data
+                            )
+                        )
+
+                    case .complete(let trailers, _):
+                        if trailers.count > 0 {
+                            onStreamEvent?(
+                                .trailers(
+                                    trailers
+                                )
+                            )
+                        }
+
+                        completed = true
+                    }
+                }
+
+                if completed {
+                    let output = try decoder.finish()
+
                     finishResponse(
                         head: responseHead,
                         body: output.body,
                         trailers: output.trailers
+                    )
+                } else if isComplete {
+                    failResponse(
+                        "Connection completed before chunked body terminated"
                     )
                 }
             } catch {
@@ -326,6 +360,11 @@ final class RequestConnectionHandler: @unchecked Sendable {
 
                 return
             }
+
+            emitBodyDelta(
+                buffer,
+                through: buffer.count
+            )
 
             guard isComplete else {
                 return
@@ -392,6 +431,12 @@ final class RequestConnectionHandler: @unchecked Sendable {
 
             responseHead = head
             framing = bodyFraming
+
+            onStreamEvent?(
+                .responseHead(
+                    head
+                )
+            )
 
             buffer.removeSubrange(
                 buffer.startIndex..<headerEnd
@@ -469,6 +514,57 @@ final class RequestConnectionHandler: @unchecked Sendable {
         onSuccess(
             response
         )
+
+        connection.cancel()
+
+        markDone()
+    }
+
+    private func emitBodyDelta(
+        _ data: Data,
+        through count: Int
+    ) {
+        guard let onStreamEvent else {
+            return
+        }
+
+        let upperBound = min(
+            max(
+                0,
+                count
+            ),
+            data.count
+        )
+
+        guard upperBound > streamedBodyByteCount else {
+            return
+        }
+
+        let start = data.index(
+            data.startIndex,
+            offsetBy: streamedBodyByteCount
+        )
+
+        let end = data.index(
+            data.startIndex,
+            offsetBy: upperBound
+        )
+
+        onStreamEvent(
+            .body(
+                data.subdata(
+                    in: start..<end
+                )
+            )
+        )
+
+        streamedBodyByteCount = upperBound
+    }
+
+    func cancel() {
+        guard !finished else {
+            return
+        }
 
         connection.cancel()
 
