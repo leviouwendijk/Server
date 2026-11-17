@@ -207,7 +207,8 @@ public actor ServerEngine: Sendable {
         listenerReady
     }
 
-    package var listenerBoundPort: UInt16? {
+    /// Port the listener actually bound; resolves `port: 0` to the kernel-assigned port.
+    public var listenerBoundPort: UInt16? {
         listener?.port?.rawValue
     }
 
