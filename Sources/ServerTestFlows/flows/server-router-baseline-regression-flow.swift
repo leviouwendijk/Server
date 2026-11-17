@@ -1,3 +1,4 @@
+import Foundation
 import HTTP
 import Server
 import TestFlows
@@ -62,6 +63,84 @@ extension ServerSecurityFlows {
             try Expect.false(
                 result.synthetic,
                 "router-baseline.exact.synthetic"
+            )
+        }
+
+        Step("unmatched handler serves missing paths but never overrides routed paths") {
+            let router = Router(
+                routes: [
+                    Route(
+                        method: .get,
+                        path: "/items"
+                    ) { _, _ in
+                        .text(
+                            "routed"
+                        )
+                    },
+                ],
+                unmatched: { request in
+                    guard request.path.raw.hasPrefix("/dynamic/") else {
+                        return nil
+                    }
+
+                    return HTTPResponse(
+                        status: .ok,
+                        headers: [
+                            "Content-Type": "application/octet-stream",
+                        ],
+                        bodyData: Data([0x00, 0xFF])
+                    )
+                }
+            )
+
+            let dynamic = await router.observed(
+                HTTPRequest(
+                    method: .get,
+                    path: "/dynamic/blob"
+                )
+            )
+
+            try Expect.equal(
+                dynamic.response.status.code,
+                200,
+                "router-baseline.unmatched.status"
+            )
+
+            try Expect.equal(
+                dynamic.response.bodyData,
+                Data([0x00, 0xFF]),
+                "router-baseline.unmatched.bytes"
+            )
+
+            try Expect.isNil(
+                dynamic.pattern,
+                "router-baseline.unmatched.pattern"
+            )
+
+            let declined = await router.observed(
+                HTTPRequest(
+                    method: .get,
+                    path: "/elsewhere"
+                )
+            )
+
+            try Expect.equal(
+                declined.response.status.code,
+                404,
+                "router-baseline.unmatched.declined-404"
+            )
+
+            let methodMismatch = await router.observed(
+                HTTPRequest(
+                    method: .post,
+                    path: "/items"
+                )
+            )
+
+            try Expect.equal(
+                methodMismatch.response.status.code,
+                405,
+                "router-baseline.unmatched.routed-path-keeps-405"
             )
         }
 

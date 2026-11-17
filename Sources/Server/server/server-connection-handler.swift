@@ -501,7 +501,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
                             startedAt
                         ),
                         routePattern: result.pattern,
-                        responseBytes: response.body.utf8.count,
+                        responseBytes: response.bodyData.count,
                         failure: response.failure
                     )
 
@@ -795,17 +795,13 @@ final class ServerConnectionHandler: @unchecked Sendable {
         _ response: HTTPResponse,
         closeAfterSend: Bool = false
     ) async {
-        let wire = HTTPResponseBuilder.build(
+        let payload = HTTPResponseBuilder.buildData(
             response
         )
 
         log(
-            "Sending HTTP response (\(wire.count) bytes)",
+            "Sending HTTP response (\(payload.count) bytes)",
             level: .debug
-        )
-
-        let payload = Data(
-            wire.utf8
         )
 
         await withCheckedContinuation {

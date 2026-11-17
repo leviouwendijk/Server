@@ -1,29 +1,40 @@
 import Foundation
 import HTTP
 
+/// Handles requests whose path has no route. Returning `nil` falls through to the 404.
+public typealias RouteUnmatchedHandler = @Sendable (HTTPRequest) async -> HTTPResponse?
+
 public struct Router: Sendable {
     public let routes: [Route]
     public let methods: Set<HTTPMethod>
     public let json: ServerJSONPolicy
 
+    /// Consulted only when no route exists at the request path (allowed methods only),
+    /// so 405/OPTIONS semantics for routed paths are unchanged.
+    public let unmatched: RouteUnmatchedHandler?
+
     public init(
         methods: Set<HTTPMethod> = HTTPMethod.defaultServerAllowed,
         json: ServerJSONPolicy = .default,
+        unmatched: RouteUnmatchedHandler? = nil,
         @RouteBuilder _ builder: () -> [Route]
     ) {
         self.routes = builder()
         self.methods = methods
         self.json = json
+        self.unmatched = unmatched
     }
 
     public init(
         routes: [Route],
         methods: Set<HTTPMethod> = HTTPMethod.defaultServerAllowed,
-        json: ServerJSONPolicy = .default
+        json: ServerJSONPolicy = .default,
+        unmatched: RouteUnmatchedHandler? = nil
     ) {
         self.routes = routes
         self.methods = methods
         self.json = json
+        self.unmatched = unmatched
     }
 // public struct Router: Sendable {
 //     public let routes: [Route]

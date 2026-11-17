@@ -81,6 +81,19 @@ public extension Router {
             )
         }
 
+        if routeAtPath == nil,
+           let unmatched,
+           let response = await unmatched(
+               request
+           ) {
+            return RouteResult(
+                response: response,
+                pattern: nil,
+                method: request.method,
+                synthetic: false
+            )
+        }
+
         return RouteResult(
             response: fallback(
                 for: request

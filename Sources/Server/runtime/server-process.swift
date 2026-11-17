@@ -13,6 +13,7 @@ public struct ServerProcess: Sendable {
     public init(
         config: ServerConfig = ServerConfig.externallyManagedProcess(),
         routes: [Route],
+        unmatched: RouteUnmatchedHandler? = nil,
 
         statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
         logger: StandardLogger? = nil,
@@ -23,7 +24,8 @@ public struct ServerProcess: Sendable {
         let router = Router(
             routes: routes,
             methods: config.security.methods,
-            json: config.json
+            json: config.json,
+            unmatched: unmatched
         )
 
         self.config = config
