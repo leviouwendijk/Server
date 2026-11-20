@@ -1,5 +1,5 @@
 .DS_Store
-/.build
+.build/
 /Packages
 xcuserdata/
 DerivedData/
@@ -8,3 +8,5 @@ DerivedData/
 .netrc
 
 
+**/.testflows/*
+!**/.testflows/snapshots/
