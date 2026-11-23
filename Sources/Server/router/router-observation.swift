@@ -1,3 +1,4 @@
+import Foundation
 import HTTP
 
 public extension Router {
@@ -71,7 +72,17 @@ public extension Router {
                 request
             )
 
-            response.body = ""
+            // HEAD reports the GET representation's length without sending it.
+            if response.headers.get(
+                HTTPConstants.contentLengthHeader
+            ) == nil {
+                response.headers.set(
+                    HTTPConstants.contentLengthHeader,
+                    "\(response.bodyData.count)"
+                )
+            }
+
+            response.bodyData = Data()
 
             return RouteResult(
                 response: response,

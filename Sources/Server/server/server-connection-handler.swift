@@ -11,6 +11,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
     }
 
     private let connection: NWConnection
+    private let peer: String
     private let router: Router
     private let config: ServerConfig
     private let statusRegistry: HTTPStatusRegistry
@@ -28,7 +29,9 @@ final class ServerConnectionHandler: @unchecked Sendable {
     private var timeoutGeneration = 0
     private var timeoutTask: Task<Void, Never>?
     private var closing = false
+    private var draining = false
     private var didTerminate = false
+    private var continueSent = false
     
     init(
         id: UUID,
@@ -45,6 +48,9 @@ final class ServerConnectionHandler: @unchecked Sendable {
 
         self.id = id
         self.connection = connection
+        self.peer = Self.peerAddress(
+            connection.endpoint
+        )
         self.router = router
         self.config = config
         self.statusRegistry = statusRegistry
@@ -77,7 +83,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
         startReceiveLoop()
     }
 
-    package func pendingOperationCount() async -> Int {
+    func pendingOperationCount() async -> Int {
         await withCheckedContinuation { continuation in
             queue.async { [weak self] in
                 continuation.resume(
@@ -229,7 +235,6 @@ final class ServerConnectionHandler: @unchecked Sendable {
             do {
                 contentLength = try HTTPFraming.extractContentLength(
                     from: headerData,
-                    // policy: config.limits.content
                     policy: config.requestPolicies.content
                 ) ?? 0
             } catch HTTPParsingError.contentLengthTooLarge(
@@ -301,6 +306,10 @@ final class ServerConnectionHandler: @unchecked Sendable {
                     level: .debug
                 )
 
+                sendContinueIfExpected(
+                    headerData
+                )
+
                 beginContentIfNeeded()
 
                 return true
@@ -310,13 +319,8 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 in: 0..<total
             )
 
-            let requestText = String(
-                data: requestData,
-                encoding: .utf8
-            ) ?? ""
-
             log(
-                "Extracted complete request (\(requestText.count) chars)",
+                "Extracted complete request (\(requestData.count) bytes)",
                 level: .debug
             )
 
@@ -324,8 +328,10 @@ final class ServerConnectionHandler: @unchecked Sendable {
                 0..<total
             )
 
-            handleText(
-                requestText
+            continueSent = false
+
+            handleRequest(
+                requestData
             )
 
             guard !closing else {
@@ -408,23 +414,68 @@ final class ServerConnectionHandler: @unchecked Sendable {
         }
     }
 
-    private func handleText(
-        _ text: String
+    /// Sends `100 Continue` once per request when the client waits for it before the body.
+    /// Only called with no response in flight, so the interim response cannot interleave.
+    private func sendContinueIfExpected(
+        _ headerData: Data
     ) {
-        log(
-            "handleText called with \(text.count) bytes",
-            level: .debug
-        )
+        guard !continueSent,
+              !closing,
+              Self.expectsContinue(
+                headerData
+              )
+        else {
+            return
+        }
 
+        continueSent = true
+
+        connection.send(
+            content: Data(
+                "HTTP/1.1 100 Continue\r\n\r\n".utf8
+            ),
+            completion: .idempotent
+        )
+    }
+
+    private static func expectsContinue(
+        _ headerData: Data
+    ) -> Bool {
+        String(
+            decoding: headerData,
+            as: UTF8.self
+        )
+        .components(
+            separatedBy: HTTPConstants.crlf
+        )
+        .dropFirst()
+        .contains { line in
+            guard let colon = line.firstIndex(
+                of: ":"
+            ) else {
+                return false
+            }
+
+            return line[..<colon].lowercased() == "expect"
+                && line[line.index(after: colon)...]
+                    .trimmingCharacters(
+                        in: .whitespaces
+                    )
+                    .lowercased() == "100-continue"
+        }
+    }
+
+    private func handleRequest(
+        _ data: Data
+    ) {
         do {
-            // let request = try HTTPRequestParser.parse(
-            //     text,
-            //     headerPolicy: config.limits.headers,
-            //     requestTargetPolicy: config.security.target
-            // )
             let request = try HTTPRequest(
-                parsing: text,
+                parsing: data,
                 policies: config.requestPolicies
+            )
+            .resolvingClient(
+                peer: peer,
+                trustedProxies: config.trustedProxies
             )
 
             let callback = activityCallback
@@ -452,7 +503,11 @@ final class ServerConnectionHandler: @unchecked Sendable {
                     let completed
                 ):
                     result = completed
-                    closeAfterSend = false
+                    closeAfterSend = !request.keepAlive
+
+                    if closeAfterSend {
+                        await self.prepareToClose()
+                    }
 
                 case .timedOut:
                     self.log(
@@ -510,9 +565,15 @@ final class ServerConnectionHandler: @unchecked Sendable {
                     )
                 }
 
+                let draining =
+                    await self.isDraining()
+
                 await self.sendHTTPResponse(
                     response,
-                    closeAfterSend: closeAfterSend
+                    closeAfterSend: closeAfterSend || draining,
+                    method: request.method,
+                    version: request.version,
+                    keepAlive: request.keepAlive
                 )
             }
         } catch {
@@ -649,6 +710,7 @@ final class ServerConnectionHandler: @unchecked Sendable {
         requestTail = nil
 
         guard !closing else {
+            connection.cancel()
             return
         }
 
@@ -793,10 +855,29 @@ final class ServerConnectionHandler: @unchecked Sendable {
 
     private func sendHTTPResponse(
         _ response: HTTPResponse,
-        closeAfterSend: Bool = false
+        closeAfterSend: Bool = false,
+        method: HTTPMethod? = nil,
+        version: String = HTTPConstants.httpVersion,
+        keepAlive: Bool = true
     ) async {
+        var response = response
+
+        if closeAfterSend {
+            response.headers.set(
+                HTTPConstants.connectionHeader,
+                "close"
+            )
+        } else if version == HTTPConstants.httpVersion10,
+                  keepAlive {
+            response.headers.set(
+                HTTPConstants.connectionHeader,
+                "keep-alive"
+            )
+        }
+
         let payload = HTTPResponseBuilder.buildData(
-            response
+            response,
+            for: method
         )
 
         log(
@@ -804,14 +885,24 @@ final class ServerConnectionHandler: @unchecked Sendable {
             level: .debug
         )
 
+        let sendTimeout = config.timeouts.send
+
         await withCheckedContinuation {
             (
                 continuation: CheckedContinuation<Void, Never>
             ) in
 
+            let state = SendState()
+
             connection.send(
                 content: payload,
                 completion: .contentProcessed { [weak self] error in
+                    guard !state.finished else {
+                        return
+                    }
+
+                    state.finished = true
+
                     if let self {
                         if let error {
                             self.log(
@@ -833,19 +924,99 @@ final class ServerConnectionHandler: @unchecked Sendable {
                     continuation.resume()
                 }
             )
+
+            queue.asyncAfter(
+                deadline: .now() + Self.seconds(
+                    sendTimeout
+                )
+            ) { [weak self] in
+                guard !state.finished else {
+                    return
+                }
+
+                state.finished = true
+
+                if let self {
+                    self.log(
+                        "Send deadline reached; closing connection",
+                        level: .debug
+                    )
+
+                    self.closing = true
+                    self.cancelTimeout()
+                    self.connection.cancel()
+                }
+
+                continuation.resume()
+            }
         }
     }
 
-    private func sendPlain(_ string: String) {
-        log("Sending plain text (\(string.count) bytes)", level: .debug)
-        let payload = Data(string.utf8)
-        connection.send(
-            content: payload,
-            completion: .contentProcessed { [weak self] error in
-                if let e = error {
-                    self?.log("Send error: \(e)", level: .error)
-                }
-            })
+    /// Mutated only on the connection queue (send completions and the deadline both run there).
+    private final class SendState: @unchecked Sendable {
+        var finished = false
+    }
+
+    private static func seconds(
+        _ duration: Duration
+    ) -> Double {
+        let components = duration.components
+
+        return Double(
+            components.seconds
+        ) + Double(
+            components.attoseconds
+        ) / 1e18
+    }
+
+    private static func peerAddress(
+        _ endpoint: NWEndpoint
+    ) -> String {
+        guard case .hostPort(let host, _) = endpoint else {
+            return "\(endpoint)"
+        }
+
+        switch host {
+        case .ipv4(let address):
+            return "\(address)"
+
+        case .ipv6(let address):
+            return "\(address)"
+
+        case .name(let name, _):
+            return name
+
+        @unknown default:
+            return "\(host)"
+        }
+    }
+
+    /// Graceful stop: an idle connection closes now; a busy one finishes its current
+    /// response, sent with `Connection: close`, and then closes.
+    func closeWhenIdle() {
+        queue.async { [weak self] in
+            guard let self else {
+                return
+            }
+
+            self.draining = true
+            self.closing = true
+            self.cancelTimeout()
+
+            if self.pendingOperations == 0 {
+                self.connection.cancel()
+            }
+        }
+    }
+
+    private func isDraining() async -> Bool {
+        await withCheckedContinuation { continuation in
+            queue.async { [weak self] in
+                continuation.resume(
+                    returning: self?.draining ?? true
+                )
+            }
+        }
     }
 
     func cancel() {
@@ -867,9 +1038,16 @@ final class ServerConnectionHandler: @unchecked Sendable {
         )
     }
     
-    private func log(_ msg: String, level: LogLevel) {
-        if level.rawValue >= config.logLevel.rawValue {
-            print("[\(connection.endpoint)] \(msg)")
+    private func log(
+        _ message: @autoclosure () -> String,
+        level: LogLevel
+    ) {
+        guard level.rawValue >= config.logLevel.rawValue else {
+            return
         }
+
+        print(
+            "[\(connection.endpoint)] \(message())"
+        )
     }
 }

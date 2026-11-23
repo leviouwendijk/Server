@@ -5,7 +5,7 @@ public struct ServerLimits: Sendable, Hashable, Equatable {
     public let headers: HTTPHeaderPolicy
 
     public init(
-        content: HTTPContentPolicy = .default,
+        content: HTTPContentPolicy = .custom(20.mib),
         headers: HTTPHeaderPolicy = HTTPHeaderPolicy.request.default
     ) {
         self.content = content

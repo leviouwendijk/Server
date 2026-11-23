@@ -5,28 +5,24 @@ import Milieu
 
 public struct BearerMiddleware: Middleware {
     public let name = "bearer-auth"
-    private let expectedKey: String?
+    private let expectedKey: String
     private let realmName: String
-    
+
+    /// An empty key leaves the server misconfigured: every request gets 500.
     public init(rawKey: String, realmName: String = "api") {
         self.expectedKey = rawKey
         self.realmName = realmName
     }
 
-    public init(symbol: String, realmName: String = "api") {
-        self.expectedKey = try? EnvironmentExtractor.value(.symbol(symbol))
-        self.realmName = realmName
-    }
-    
-    public init(envSymbol: String, realmName: String = "api") {
-        self.init(symbol: envSymbol, realmName: realmName)
-    }
+    /// Reads the key from the environment; a missing or empty variable throws at startup.
+    public init(symbol: String, realmName: String = "api") throws {
+        let key = try EnvironmentExtractor.value(.symbol(symbol))
 
-    public init(symbol: String?, realmName: String = "api") throws {
-        guard let symbol else {
-            throw MiddlewareError.failedToInitializeEmptySymbol
+        guard !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw MiddlewareError.emptyKey(symbol)
         }
-        self.init(symbol: symbol, realmName: realmName)
+
+        self.init(rawKey: key, realmName: realmName)
     }
 
     /// Tries to auto-synthesize from the 'APP_NAME' environment variable
@@ -37,9 +33,8 @@ public struct BearerMiddleware: Middleware {
     /// Returns: "STAT_API_KEY"
     /// Then runs the initializer for environment symbol
     public init(config: ServerConfig, realmName: String = "api", suffix: SynthesizedSymbol = .api_key) throws {
-        // let symbol = try config.autoSynthesizeTokenSymbol(suffix: suffix)
         let symbol = try config.synthesize(suffix)
-        self.init(symbol: symbol, realmName: realmName)
+        try self.init(symbol: symbol, realmName: realmName)
     }
 
     internal enum AuthorizationStatus: Sendable, Codable {
@@ -53,7 +48,7 @@ public struct BearerMiddleware: Middleware {
             case .authorized:
                 return ""
             case .misconfigured:
-                return "Server misconfigured: key has not been set."
+                return "Internal Server Error"
             case .missing:
                 return "Missing or invalid Authorization header."
             case .invalid:
@@ -76,18 +71,17 @@ public struct BearerMiddleware: Middleware {
     }
 
     internal static func authenticate(
-        expected: String?,
+        expected: String,
         provided: String?,
         bearerRealm: String = "api"
     ) -> (AuthorizationStatus, HTTPResponse) {
-        guard let expected else {
+        guard !expected.isEmpty else {
             let status = AuthorizationStatus.misconfigured
 
             return (
                 status,
-                .unauthorized(
-                    body: status.body,
-                    bearerRealm: bearerRealm
+                .internalServerError(
+                    body: status.body
                 )
             )
         }
@@ -125,40 +119,6 @@ public struct BearerMiddleware: Middleware {
         )
     }
 
-    // internal static func authenticate(
-    //     expected: String?,
-    //     provided: String?,
-    //     bearerRealm: String = "api"
-    // ) -> (AuthorizationStatus, HTTPResponse) {
-    //     let status: AuthorizationStatus
-    //     let response: HTTPResponse
-
-    //     if expected == nil {
-    //         status = .misconfigured
-    //         response = .unauthorized(
-    //             body: status.body,
-    //             bearerRealm: bearerRealm
-    //         )
-    //     } else if provided == nil {
-    //         status = .missing
-    //         response = .unauthorized(
-    //             body: status.body,
-    //             bearerRealm: bearerRealm
-    //         )
-    //     } else if !(provided == expected) {
-    //         status = .invalid
-    //         response = .unauthorized(
-    //             body: status.body,
-    //             bearerError: status.bearerError
-    //         )
-    //     } else {
-    //         status = .authorized
-    //         response = .ok()
-    //     }
-
-    //     return (status, response)
-    // }
-    
     public func handle(
         _ request: HTTPRequest,
         _ router: Router,

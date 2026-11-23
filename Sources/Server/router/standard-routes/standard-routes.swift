@@ -47,24 +47,11 @@ public enum StandardRoutes {
     public static func protectedListRoutes(
         symbol: String,
         realmName: String = "routes"
-    ) -> Route {
+    ) throws -> Route {
         listRoutes()
             .use(
-                BearerMiddleware(
+                try BearerMiddleware(
                     symbol: symbol,
-                    realmName: realmName
-                )
-            )
-    }
-
-    public static func protectedListRoutes(
-        envSymbol: String,
-        realmName: String = "routes"
-    ) -> Route {
-        listRoutes()
-            .use(
-                BearerMiddleware(
-                    envSymbol: envSymbol,
                     realmName: realmName
                 )
             )

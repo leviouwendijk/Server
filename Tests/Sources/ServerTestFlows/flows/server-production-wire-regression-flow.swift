@@ -354,7 +354,13 @@ private func withProductionWireServer(
         SecurityTestServer
     ) async throws -> Void
 ) async throws {
+    // Production chain: nginx on loopback, proxy-box, moxy over WireGuard.
     let server = try await SecurityTestServer.start(
+        trustedProxies: try HTTPTrustedProxies([
+            "127.0.0.1",
+            "10.90.20.15",
+            "10.100.0.0/24",
+        ]),
         limits: limits,
         routes: mountedRoutes
     )

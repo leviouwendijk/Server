@@ -11,6 +11,9 @@ public struct ServerConfig: Sendable {
     public let host: String
     public let logLevel: LogLevel
     public let maxConnections: Int?
+
+    /// Proxies whose forwarding headers are believed when resolving the client address.
+    public let trustedProxies: HTTPTrustedProxies
     public let limits: ServerLimits
     public let timeouts: ServerTimeouts
     public let security: ServerSecurity
@@ -21,7 +24,8 @@ public struct ServerConfig: Sendable {
         port: UInt16 = 9090,
         host: String = "127.0.0.1",
         logLevel: LogLevel = .info,
-        maxConnections: Int? = nil,
+        maxConnections: Int? = Self.defaultMaxConnections,
+        trustedProxies: HTTPTrustedProxies = .loopback,
         limits: ServerLimits = .default,
         timeouts: ServerTimeouts = .default,
         security: ServerSecurity = .default,
@@ -32,16 +36,23 @@ public struct ServerConfig: Sendable {
         self.host = host
         self.logLevel = logLevel
         self.maxConnections = maxConnections
+        self.trustedProxies = trustedProxies
         self.limits = limits
         self.timeouts = timeouts
         self.security = security
         self.json = json
     }
 
+    /// Concurrent connections accepted before new ones are refused.
+    public static let defaultMaxConnections: Int? = 1_024
+
+    /// Reads `APP_NAME`, `PORT`, `HOST`, `LOG_LEVEL`, `MAX_CONNECTIONS` and
+    /// `TRUSTED_PROXIES` (comma-separated addresses or CIDR ranges; default loopback).
     public static func externallyManagedProcess(
         name: String? = nil,
         logLevel: LogLevel? = nil,
         maxConnections: Int? = nil,
+        trustedProxies: HTTPTrustedProxies? = nil,
         limits: ServerLimits = .default,
         timeouts: ServerTimeouts = .default,
         security: ServerSecurity = .default,
@@ -55,10 +66,10 @@ public struct ServerConfig: Sendable {
                 logLevel,
                 default: .info
             ),
-            // maxConnections: maxConnections,
             maxConnections: envMaxConnections(
                 maxConnections
             ),
+            trustedProxies: trustedProxies ?? envTrustedProxies(),
             limits: limits,
             timeouts: timeouts,
             security: security,
@@ -76,15 +87,6 @@ public struct ServerConfig: Sendable {
 
     public var requestContentPolicy: HTTPContentPolicy {
         limits.content
-    }
-
-    @available(
-        *,
-        deprecated,
-        renamed: "requestContentPolicy"
-    )
-    public var requestContentLengthPolicy: HTTPContentPolicy {
-        requestContentPolicy
     }
 
     public var requestHeaderPolicy: HTTPHeaderPolicy {
@@ -109,19 +111,6 @@ public struct ServerConfig: Sendable {
         return try SynthesizedSymbol.synthesize(
             name: resolveName(),
             using: options
-        )
-    }
-
-    @available(
-        *,
-        deprecated,
-        renamed: "synthesize(_:)"
-    )
-    public func autoSynthesizeTokenSymbol(
-        suffix: SynthesizedSymbol = .api_key
-    ) throws -> String {
-        try synthesize(
-            suffix
         )
     }
 
@@ -164,10 +153,30 @@ public struct ServerConfig: Sendable {
         ),
         maximum > 0
         else {
-            return nil
+            return defaultMaxConnections
         }
 
         return maximum
+    }
+
+    /// An unparsable value stops the process: silently trusting fewer proxies would
+    /// attribute every request to the proxy, and trusting more would allow spoofing.
+    private static func envTrustedProxies() -> HTTPTrustedProxies {
+        guard let value = env(
+            "TRUSTED_PROXIES"
+        ) else {
+            return .loopback
+        }
+
+        do {
+            return try .parsing(
+                value
+            )
+        } catch {
+            fatalError(
+                "TRUSTED_PROXIES: \(error.localizedDescription)"
+            )
+        }
     }
 
     private static func envPort(
@@ -199,27 +208,3 @@ public struct ServerConfig: Sendable {
         ) ?? fallback
     }
 }
-
-// try keys() comes to replace a binary-side state.swift implemenation like:
-//
-// let replacer = EnvironmentReplacer(replacements: [.variable(key: "$HOME", replacement: .home)])
-//
-// internal func keys() throws -> CryptographicKeyPair {
-//     let name = try config.resolveName()
-//
-//     let pubPath = try EnvironmentExtractor.value(
-//         name: name,
-//         suffix: .public_key_path,
-//         replacer: replacer
-//     )
-//     let privPath = try EnvironmentExtractor.value(
-//         name: name,
-//         suffix: .private_key_path,
-//         replacer: replacer
-//     )
-//
-//     let publicKey  = try CryptographicKeyOperation.loadPublicKey(at: pubPath)
-//     let privateKey = try CryptographicKeyOperation.loadPrivateKey(at: privPath)
-//
-//     return CryptographicKeyPair(publicKey: publicKey, privateKey: privateKey)
-// }

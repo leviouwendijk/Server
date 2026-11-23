@@ -1,6 +1,6 @@
 import Foundation
 import HTTP
-import Server
+@_spi(Testing) import Server
 import TestFlows
 
 extension ServerSecurityFlows {

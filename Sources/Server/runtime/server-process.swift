@@ -50,9 +50,15 @@ public struct ServerProcess: Sendable {
                 await action.perform()
             }
 
-            // try await engine.start()
-            // try await Task.sleep(nanoseconds: UInt64.max)
+            let signals = installShutdownSignals()
+
             try await engine.start()
+
+            defer {
+                signals.forEach {
+                    $0.cancel()
+                }
+            }
 
             switch try await engine.waitForTermination() {
             case .stopped:
@@ -99,38 +105,43 @@ public struct ServerProcess: Sendable {
         await process.run()
     }
 
-    /// Static entry point
-    // public static func run(
-    //     config: ServerConfig = ServerConfig.externallyManagedProcess(),
-    //     routes: [Route],
+    /// SIGINT (PM2's stop signal) and SIGTERM start a graceful stop: in-flight requests
+    /// finish within `config.timeouts.shutdown`, then `run()` returns and termination
+    /// actions run. Keep PM2's `kill_timeout` above that grace period.
+    func installShutdownSignals() -> [DispatchSourceSignal] {
+        [SIGINT, SIGTERM].map { number in
+            signal(
+                number,
+                SIG_IGN
+            )
 
-    //     statusRegistry: HTTPStatusRegistry = GlobalHTTPStatusRegistry,
-    //     logger: StandardLogger? = nil,
+            let source = DispatchSource.makeSignalSource(
+                signal: number,
+                queue: .global()
+            )
 
-    //     activity: HTTPActivityCallback? = nil,
-    //     actions: [ServerActions] = []
-    // ) async {
-    //     let router = Router(routes: routes)
-    //     let engine = ServerEngine(
-    //         config: config,
-    //         router: router,
-    //         statusRegistry: statusRegistry,
-    //         logger: logger,
-    //         activityCallback: activity
-    //     )
+            let engine = engine
+            let grace = config.timeouts.shutdown
 
-    //     do {
-    //         try await engine.start()
-    //         try await Task.sleep(nanoseconds: UInt64.max)
-    //     } catch {
-    //         print("Failed to start server: \(error.localizedDescription)")
-    //     }
+            source.setEventHandler {
+                Task {
+                    await engine.stop(
+                        gracePeriod: grace
+                    )
+                }
+            }
 
-    // }
+            source.resume()
+
+            return source
+        }
+    }
 
     public func terminate() async {
         await logger?.log("Stopping server process", level: .info)
-        await engine.stop()
+        await engine.stop(
+            gracePeriod: config.timeouts.shutdown
+        )
 
         for action in actions.termination.reversed() {
             await logger?.log("Running termination action: \(action.name)", level: .info)
@@ -160,7 +171,15 @@ extension ServerProcess {
                     await action.perform()
                 }
 
+                let signals = process.installShutdownSignals()
+
                 try await process.engine.start()
+
+                defer {
+                    signals.forEach {
+                        $0.cancel()
+                    }
+                }
 
                 switch try await process.engine.waitForTermination() {
                 case .stopped:
@@ -223,67 +242,3 @@ extension ServerProcess {
         )
     }
 }
-
-// The above function abstracts:
-//
-// @main
-// struct AppRuntime {
-//     static func main() async {
-//         let config = ServerConfig.externallyManagedProcess() // <-- assuming passage of env variables (APP_NAME, PORT, HOST?, LOG_LEVEL?)
-
-//         let routes = routes()
-//         let router = Router(routes: routes)
-//         let engine = ServerEngine(config: config, router: router)
-
-//         do {
-//             try await engine.start()
-//             try await Task.sleep(nanoseconds: UInt64.max)
-//         } catch {
-//             print("Failed to start server: \(error.localizedDescription)")
-//         }
-//     }
-// }
-//
-// Which allows you to not worry about instantiating the router or engine,
-// considering this is being done purely from the config + routes anyway.
-
-// That means you can launch runtime in as few steps as:
-
-// import Server
-//
-// @main
-// struct AppRuntime {
-//     static func main() async {
-//         await ServerProcess.run(routes: routes())
-//     }
-// }
-
-// Alternatively, you can hydrate an instance and run that without static entry:
-// This makes config (ServerConfig instance) reusable, say, in your routes
-//
-// You *could* make the ServerProcess a global constant:
-//
-// let process = ServerProcess(routes: routes())
-//
-// But this requires that your routes() func you implement does **not** throw.
-//
-//
-// If you **do** want to make it throw, make main() async throws, define process inside it:
-
-// import Server
-//
-// let config = ServerConfig.externallyManagedProcess()
-//
-// @main
-// struct AppRuntime {
-//     static func main() async throws {
-//         let process = ServerProcess(
-//             config: config,
-//             routes: try routes()
-//         )
-//         await process.run() // <-- instance method instead of static accessible
-//     }
-// }
-
-// This way, config is still globally reusable and accessible.
-// But the runtime is able to throw on try routes().

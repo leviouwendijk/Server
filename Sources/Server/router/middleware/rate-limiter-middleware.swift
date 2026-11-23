@@ -27,9 +27,13 @@ public actor GlobalRateLimiter: Sendable {
     }
 }
 
-// Per-user rate limiter (keyed by header value)
+/// Sliding-window limiter per principal (client IP by default).
+///
+/// Only the requested key is pruned per request; all keys are swept at most once per
+/// window, so the cost per request does not grow with the number of principals.
 public actor PerUserRateLimiter: Sendable {
     private var userRequests: [String: [Date]] = [:]
+    private var lastSweep = Date.distantPast
 
     private let maxRequests: Int
     private let windowSeconds: Int
@@ -47,18 +51,23 @@ public actor PerUserRateLimiter: Sendable {
     ) -> Bool {
         let now = Date()
 
-        let windowStart = now.addingTimeInterval(
+        let cutoff = now.addingTimeInterval(
             -Double(
                 windowSeconds
             )
         )
 
-        prune(
-            through: windowStart
+        sweepIfDue(
+            now: now,
+            cutoff: cutoff
         )
 
         var requests =
             userRequests[key] ?? []
+
+        requests.removeAll {
+            $0 <= cutoff
+        }
 
         guard requests.count < maxRequests else {
             userRequests[key] = requests
@@ -74,33 +83,26 @@ public actor PerUserRateLimiter: Sendable {
         return true
     }
 
-    package var retainedPrincipalCount: Int {
+    @_spi(Testing) public var retainedPrincipalCount: Int {
         userRequests.count
     }
 
-    private func prune(
-        through cutoff: Date
+    private func sweepIfDue(
+        now: Date,
+        cutoff: Date
     ) {
-        for key in Array(
-            userRequests.keys
-        ) {
-            guard var requests =
-                userRequests[key]
-            else {
-                continue
+        guard now.timeIntervalSince(lastSweep) >= Double(windowSeconds) else {
+            return
+        }
+
+        lastSweep = now
+
+        userRequests = userRequests.compactMapValues { requests in
+            let live = requests.filter {
+                $0 > cutoff
             }
 
-            requests.removeAll {
-                $0 <= cutoff
-            }
-
-            if requests.isEmpty {
-                userRequests.removeValue(
-                    forKey: key
-                )
-            } else {
-                userRequests[key] = requests
-            }
+            return live.isEmpty ? nil : live
         }
     }
 }
@@ -142,7 +144,7 @@ public struct PerUserRateLimitMiddleware: Middleware {
     public init(
         maxRequests: Int,
         windowSeconds: Int,
-        principal: @escaping Principal = { _ in nil }
+        principal: @escaping Principal = { $0.clientIP }
     ) {
         self.limiter = PerUserRateLimiter(
             maxRequests: maxRequests,
@@ -165,23 +167,6 @@ public struct PerUserRateLimitMiddleware: Middleware {
                     trustedHeader
                 )
             }
-        )
-    }
-
-    @available(
-        *,
-        deprecated,
-        message: "Use trustedHeader: only for identity supplied by a trusted upstream."
-    )
-    public init(
-        maxRequests: Int,
-        windowSeconds: Int,
-        userKeyHeader: String
-    ) {
-        self.init(
-            maxRequests: maxRequests,
-            windowSeconds: windowSeconds,
-            trustedHeader: userKeyHeader
         )
     }
 

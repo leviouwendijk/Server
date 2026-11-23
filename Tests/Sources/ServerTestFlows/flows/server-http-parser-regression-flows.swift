@@ -162,12 +162,27 @@ extension ServerSecurityFlows {
             )
         }
 
-        Step("trim ordinary whitespace around header keys and values") {
+        Step("reject whitespace around header names") {
+            try Expect.throwsError(
+                "request-parser.name-whitespace"
+            ) {
+                _ = try HTTPRequest(
+                    parsing: httpRawMessage(
+                        headLines: [
+                            "GET /trim HTTP/1.1",
+                            "Host : localhost"
+                        ]
+                    )
+                )
+            }
+        }
+
+        Step("trim ordinary whitespace around header values") {
             let raw = httpRawMessage(
                 headLines: [
                     "GET /trim HTTP/1.1",
-                    " Host :   localhost   ",
-                    " X-Trace-ID :   abc-123   "
+                    "Host:   localhost   ",
+                    "X-Trace-ID:   abc-123   "
                 ]
             )
 

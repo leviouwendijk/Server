@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 import HTTP
 import Network
-import Server
+@_spi(Testing) import Server
 
 enum SecurityNetworkHarnessError: Error, Sendable {
     case listenerDidNotBecomeReady
@@ -325,6 +325,7 @@ struct SecurityTestServer: Sendable {
     static func start(
         host: String = "127.0.0.1",
         maxConnections: Int? = nil,
+        trustedProxies: HTTPTrustedProxies = .loopback,
         limits: ServerLimits = .default,
         timeouts: ServerTimeouts = .default,
         activityCallback: HTTPActivityCallback? = nil,
@@ -336,6 +337,7 @@ struct SecurityTestServer: Sendable {
             host: host,
             logLevel: .error,
             maxConnections: maxConnections,
+            trustedProxies: trustedProxies,
             limits: limits,
             timeouts: timeouts
         )

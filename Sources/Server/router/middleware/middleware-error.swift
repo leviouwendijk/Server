@@ -1,26 +1,26 @@
 import Foundation
 
 public enum MiddlewareError: Error, LocalizedError {
-    case failedToInitializeEmptySymbol
-    
+    case emptyKey(String)
+
     public var errorDescription: String? {
         switch self {
-        case .failedToInitializeEmptySymbol:
-            return "Failed to initialize middleware object"
+        case .emptyKey(let symbol):
+            return "Environment variable \(symbol) is empty"
         }
     }
 
     public var failureReason: String? {
         switch self {
-        case .failedToInitializeEmptySymbol:
-            return "The symbol provided to the initializer is empty"
+        case .emptyKey:
+            return "The bearer key must not be empty"
         }
     }
-    
+
     public var recoverySuggestion: String? {
         switch self {
-        case .failedToInitializeEmptySymbol:
-            return "Ensure that passing optionals to the initializer resolves to a non-nil value"
+        case .emptyKey(let symbol):
+            return "Set \(symbol) in the service environment"
         }
     }
 }

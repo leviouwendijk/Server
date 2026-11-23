@@ -33,6 +33,7 @@ public actor ServerEngine: Sendable {
     ] = []
 
     private var clients: [UUID: ServerConnectionHandler] = [:]
+    private var stopping = false
 
     private let logger: StandardLogger?
     private let activityCallback: HTTPActivityCallback?
@@ -68,6 +69,7 @@ public actor ServerEngine: Sendable {
 
         listenerReady = false
         listenerFailure = nil
+        stopping = false
 
         startup = nil
         termination = nil
@@ -138,7 +140,17 @@ public actor ServerEngine: Sendable {
         }
     }
     
-    public func stop() async {
+    /// Stops accepting connections, lets in-flight responses finish (sent with
+    /// `Connection: close`) for up to `gracePeriod`, then cancels what remains.
+    public func stop(
+        gracePeriod: Duration = .seconds(10)
+    ) async {
+        guard !stopping else {
+            return
+        }
+
+        stopping = true
+
         await logger?.log(
             "Stopping server",
             level: .info
@@ -153,19 +165,34 @@ public actor ServerEngine: Sendable {
             )
         )
 
-        signalTermination(
-            .stopped
+        for handler in clients.values {
+            handler.closeWhenIdle()
+        }
+
+        let deadline = ContinuousClock.now.advanced(
+            by: gracePeriod
         )
 
-        let active = Array(
+        while !clients.isEmpty,
+              ContinuousClock.now < deadline {
+            try? await Task.sleep(
+                for: .milliseconds(25)
+            )
+        }
+
+        let remaining = Array(
             clients.values
         )
 
         clients.removeAll()
 
-        for handler in active {
+        for handler in remaining {
             handler.cancel()
         }
+
+        signalTermination(
+            .stopped
+        )
     }
 
     public func waitForTermination() async throws -> Termination {
@@ -182,11 +209,11 @@ public actor ServerEngine: Sendable {
         return result
     }
 
-    package var retainedConnectionHandlerCount: Int {
+    @_spi(Testing) public var retainedConnectionHandlerCount: Int {
         clients.count
     }
 
-    package func maximumPendingOperationCount() async -> Int {
+    @_spi(Testing) public func maximumPendingOperationCount() async -> Int {
         let active = Array(
             clients.values
         )
@@ -203,7 +230,7 @@ public actor ServerEngine: Sendable {
         return maximum
     }
 
-    package var listenerIsReady: Bool {
+    @_spi(Testing) public var listenerIsReady: Bool {
         listenerReady
     }
 
@@ -212,7 +239,7 @@ public actor ServerEngine: Sendable {
         listener?.port?.rawValue
     }
 
-    package var listenerFailureDescription: String? {
+    @_spi(Testing) public var listenerFailureDescription: String? {
         listenerFailure
     }
     
@@ -223,6 +250,11 @@ public actor ServerEngine: Sendable {
             "New connection from \(connection.endpoint)",
             level: .debug
         )
+
+        if stopping {
+            connection.cancel()
+            return
+        }
 
         if let maximum = config.maxConnections,
            clients.count >= maximum {
@@ -379,9 +411,12 @@ public actor ServerEngine: Sendable {
                 )
             )
 
-            signalTermination(
-                .stopped
-            )
+            // stop() signals termination itself once connections have drained.
+            if !stopping {
+                signalTermination(
+                    .stopped
+                )
+            }
 
             await logger?.log(
                 "Server cancelled",
@@ -408,10 +443,4 @@ public actor ServerEngine: Sendable {
             )
         }
     }
-    
-    // private func log(_ msg: String, level: LogLevel) {
-    //     if level.rawValue >= config.logLevel.rawValue {
-    //         print("[\(level.label)] \(msg)")
-    //     }
-    // }
 }
