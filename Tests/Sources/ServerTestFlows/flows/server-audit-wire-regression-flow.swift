@@ -8,6 +8,7 @@ import TestFlows
 
 private func auditRoutes() -> [Route] {
     [
+        StandardRoutes.whoami(),
         Route(
             method: .get,
             path: "/ok"
@@ -351,6 +352,36 @@ extension ServerSecurityFlows {
                     text,
                     "ip=203.0.113.10",
                     "audit.client-ip.trusted-chain"
+                )
+            }
+        }
+
+        Step("whoami reports the resolved client and the socket peer") {
+            try await withAuditServer(
+                trustedProxies: try HTTPTrustedProxies([
+                    "127.0.0.1",
+                ])
+            ) { server in
+                let text = try await exchange(
+                    server,
+                    "GET /whoami HTTP/1.1\r\nHost: x\r\nX-Forwarded-For: 203.0.113.10\r\n\r\n",
+                    until: {
+                        $0.hasSuffix(
+                            "}"
+                        )
+                    }
+                )
+
+                try Expect.contains(
+                    text,
+                    "\"client_ip\" : \"203.0.113.10\"",
+                    "audit.whoami.client"
+                )
+
+                try Expect.contains(
+                    text,
+                    "\"peer\" : \"127.0.0.1\"",
+                    "audit.whoami.peer"
                 )
             }
         }
