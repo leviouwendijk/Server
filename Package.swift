@@ -16,17 +16,17 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swift-webc/HTTP.git", branch: "master"),
-        .package(url: "https://github.com/leviouwendijk/Cryptography.git", branch: "master"),
+        .package(url: "https://github.com/swift-lco/Cryptography.git", branch: "master"),
 
-        .package(url: "https://github.com/leviouwendijk/Milieu.git", branch: "master"),
-        .package(url: "https://github.com/leviouwendijk/Loggers.git", branch: "master"),
+        .package(url: "https://github.com/swift-lco/Milieu.git", branch: "master"),
+        .package(url: "https://github.com/swift-lco/Loggers.git", branch: "master"),
 
-        .package(url: "https://github.com/leviouwendijk/Variables.git", branch: "master"),
-        .package(url: "https://github.com/leviouwendijk/Primitives.git", branch: "master"),
+        .package(url: "https://github.com/swift-lco/Variables.git", branch: "master"),
+        .package(url: "https://github.com/swift-lco/Primitives.git", branch: "master"),
 
         .package(url: "https://github.com/swift-langs/Parsers.git", branch: "master"),
 
-        .package(url: "https://github.com/leviouwendijk/Path.git", branch: "master"),
+        .package(url: "https://github.com/swift-lco/Path.git", branch: "master"),
     ],
     targets: [
         .target(

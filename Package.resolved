@@ -4,7 +4,7 @@
     {
       "identity" : "arguments",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Arguments.git",
+      "location" : "https://github.com/swift-lco/Arguments.git",
       "state" : {
         "branch" : "master",
         "revision" : "2bbd1184eb89d4c34e7d5be64417332b53d9764c"
@@ -13,7 +13,7 @@
     {
       "identity" : "atomos",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Atomos.git",
+      "location" : "https://github.com/swift-lco/Atomos.git",
       "state" : {
         "branch" : "master",
         "revision" : "857fa1b7d1975fe17d52e21c154f92ba5e696be3"
@@ -22,7 +22,7 @@
     {
       "identity" : "cryptography",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Cryptography.git",
+      "location" : "https://github.com/swift-lco/Cryptography.git",
       "state" : {
         "branch" : "master",
         "revision" : "7bd0896fdf92b89a94c94ee6c297eb7589a26054"
@@ -31,7 +31,7 @@
     {
       "identity" : "difference",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Difference.git",
+      "location" : "https://github.com/swift-lco/Difference.git",
       "state" : {
         "branch" : "master",
         "revision" : "e926c931531161da98cb9ef16598d931af23e84d"
@@ -49,7 +49,7 @@
     {
       "identity" : "errors",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Errors.git",
+      "location" : "https://github.com/swift-lco/Errors.git",
       "state" : {
         "branch" : "master",
         "revision" : "af4592f7389c1d43ef8d20155cd6da973b7e88b6"
@@ -58,7 +58,7 @@
     {
       "identity" : "excerpt",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Excerpt.git",
+      "location" : "https://github.com/swift-lco/Excerpt.git",
       "state" : {
         "branch" : "master",
         "revision" : "2ed6f7962c295f4d3b8410951f480a4af0233ca9"
@@ -67,7 +67,7 @@
     {
       "identity" : "filetypes",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/FileTypes.git",
+      "location" : "https://github.com/swift-lco/FileTypes.git",
       "state" : {
         "branch" : "master",
         "revision" : "315d095312091e4c089e60b24fa02df73d337531"
@@ -94,7 +94,7 @@
     {
       "identity" : "io",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/IO.git",
+      "location" : "https://github.com/swift-lco/IO.git",
       "state" : {
         "branch" : "master",
         "revision" : "6e2ee96c8b21bca65a09a07ae7206e3ab4793a0c"
@@ -112,7 +112,7 @@
     {
       "identity" : "loggers",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Loggers.git",
+      "location" : "https://github.com/swift-lco/Loggers.git",
       "state" : {
         "branch" : "master",
         "revision" : "18f60213e20f56c04c97df432693c32432510a6a"
@@ -121,7 +121,7 @@
     {
       "identity" : "methods",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Methods.git",
+      "location" : "https://github.com/swift-lco/Methods.git",
       "state" : {
         "branch" : "master",
         "revision" : "1515097c5409bb8eb61d93c54ce0db966a98f66b"
@@ -130,7 +130,7 @@
     {
       "identity" : "milieu",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Milieu.git",
+      "location" : "https://github.com/swift-lco/Milieu.git",
       "state" : {
         "branch" : "master",
         "revision" : "4ab76378aef515d2dfc72ff52f284cde31cb6a38"
@@ -157,7 +157,7 @@
     {
       "identity" : "path",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Path.git",
+      "location" : "https://github.com/swift-lco/Path.git",
       "state" : {
         "branch" : "master",
         "revision" : "3cef050339e68298c869b98daf25401c06531a91"
@@ -166,7 +166,7 @@
     {
       "identity" : "position",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Position.git",
+      "location" : "https://github.com/swift-lco/Position.git",
       "state" : {
         "branch" : "master",
         "revision" : "d9805b35c346369ef656e645902ad0cbe740c17d"
@@ -175,7 +175,7 @@
     {
       "identity" : "primitives",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Primitives.git",
+      "location" : "https://github.com/swift-lco/Primitives.git",
       "state" : {
         "branch" : "master",
         "revision" : "1e9c7defa2037e0b74be9e95d8e987442323d372"
@@ -193,7 +193,7 @@
     {
       "identity" : "readers",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Readers.git",
+      "location" : "https://github.com/swift-lco/Readers.git",
       "state" : {
         "branch" : "master",
         "revision" : "66c24cb5d8f2a3794408fbae231e9a9d266457e7"
@@ -202,7 +202,7 @@
     {
       "identity" : "schema",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Schema.git",
+      "location" : "https://github.com/swift-lco/Schema.git",
       "state" : {
         "branch" : "master",
         "revision" : "e45634af56b8f5ffe8a12a2922675e713dc38190"
@@ -220,7 +220,7 @@
     {
       "identity" : "variables",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Variables.git",
+      "location" : "https://github.com/swift-lco/Variables.git",
       "state" : {
         "branch" : "master",
         "revision" : "95453b16be757958a8f295cc93f1f28d2123636b"
@@ -229,7 +229,7 @@
     {
       "identity" : "writers",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/leviouwendijk/Writers.git",
+      "location" : "https://github.com/swift-lco/Writers.git",
       "state" : {
         "branch" : "master",
         "revision" : "aebc0d10d3afa27ee00ac0f909ab76371ba5cd04"
