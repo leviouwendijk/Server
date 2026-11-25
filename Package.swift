@@ -24,7 +24,7 @@ let package = Package(
         .package(url: "https://github.com/leviouwendijk/Variables.git", branch: "master"),
         .package(url: "https://github.com/leviouwendijk/Primitives.git", branch: "master"),
 
-        .package(url: "https://github.com/leviouwendijk/Parsers.git", branch: "master"),
+        .package(url: "https://github.com/swift-langs/Parsers.git", branch: "master"),
 
         .package(url: "https://github.com/leviouwendijk/Path.git", branch: "master"),
     ],
