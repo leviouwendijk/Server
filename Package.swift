@@ -15,7 +15,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/leviouwendijk/HTTP.git", branch: "master"),
+        .package(url: "https://github.com/swift-webc/HTTP.git", branch: "master"),
         .package(url: "https://github.com/leviouwendijk/Cryptography.git", branch: "master"),
 
         .package(url: "https://github.com/leviouwendijk/Milieu.git", branch: "master"),
