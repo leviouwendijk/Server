@@ -130,6 +130,25 @@ public struct ServerConfig: Sendable {
         )
     }
 
+    /// The service's keys from `<KEYS_DIRECTORY>/<name>/`, with file names fixed
+    /// by the service. A missing directory or file throws a `KeysError` that
+    /// names it.
+    public func keys(
+        public publicKey: String,
+        private privateKey: String,
+        directory symbol: String = "KEYS_DIRECTORY"
+    ) throws -> CryptographicKeyPair {
+        try ServiceKeys(
+            .init(
+                directory: KeysDirectory(symbol: symbol),
+                service: resolveName(),
+                publicKey: publicKey,
+                privateKey: privateKey
+            )
+        )
+        .pair
+    }
+
     private static func env(
         _ symbol: String
     ) -> String? {
